@@ -44,26 +44,9 @@ def agent():
     s.send(GameData.ClientPlayerStartRequest(playerName).serialize())
     while not started:
         pass
-    #print("GAME IS STARTED")
 
     while run:
-        if True: #status == statuses[1]: TODO: REMOVE?
-
-            # JUST TO START AND SEE WHOSE TURN IS Show Game situation
-            #s.send(GameData.ClientGetGameStateRequest(playerName).serialize())
-
-            # Wait for my turn ... 
-            #print("I'M RUNNING BUT IT's NOT MY TURN")
             if myTurn:
-                # Now it's my turn!
-                #print("NOW IT'S MY TURN")
-
-                # Show Game situation
-                #print("CHECK SITUATION")
-                #s.send(GameData.ClientGetGameStateRequest(playerName).serialize())
-
-                # Discard First card
-                #s.send(GameData.ClientPlayerDiscardCardRequest(playerName, 0).serialize())
                 # Play first card
                 print(playerName, ": PLAY FIRST CARD")
                 s.send(GameData.ClientPlayerPlayCardRequest(playerName, 0).serialize())
@@ -167,7 +150,6 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             # GAME CAN START INITIALIZE INFORMATIONS !!!
             next_turn()
         if type(data) is GameData.ServerGameStateData:
-            #print("INSIDE SERVER GAME STATE DATA")
             dataOk = True
             print("\n\nCurrent player: " + data.currentPlayer)
             print("Player hands: ")
