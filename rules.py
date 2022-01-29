@@ -1,5 +1,7 @@
 import GameData
 
+DBG = False
+
 def checkRules(s,playerName, data, hints):
     """
     Check the ruleSet, if a rule is satisfied, do the corresponding action
@@ -135,7 +137,7 @@ def otherPlayerPlayableCard(data, hints):
     """
     
     if DBG : print("DBG - CHECK RULE 3")
-    
+
     # Cannot give hints if all Note tokes were used
     if data.usedNoteTokens == 8:
         return None, None, None 
