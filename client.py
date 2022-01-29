@@ -53,9 +53,6 @@ def agent():
 
     while run:
         if myTurn:
-            # Play first card
-            # print(playerName, ": PLAY FIRST CARD")
-            # s.send(GameData.ClientPlayerPlayCardRequest(playerName, 0).serialize())
 
             # Check Rules and do corresponding action
             checkRules(s,playerName, data_seen, hints)
@@ -201,14 +198,6 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             print("Storm tokens used: " + str(data.usedStormTokens) + "/3\n\n")
             # check if it's this player's turn
             if data.currentPlayer == playerName:
-                # ADD INFO ABOUT HANDS TO LOCAL VARIABLES
-                #                for player in data.players:
-                # for i, card in enumerate(player.hand):
-                #hands[player][i]["color"] = card.color
-                #hands[player][i]["value"] = card.value
-                # print("PPPPPPPP")
-                # print(hands)
-
                 data_seen = data
                 myTurn = True
             else:
@@ -227,7 +216,6 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             last_player = data.lastPlayer
             last_card_played_idx = data.cardHandIndex
 
-            # Upgrade Hints list TODO: CHECK!!!
             hints[last_player].pop(last_card_played_idx)
             hints[last_player].append({"color": "", "value": 0})
 
@@ -242,7 +230,6 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             last_player = data.lastPlayer
             last_card_played_idx = data.cardHandIndex
 
-            # Upgrade Hints list TODO: CHECK!!!
             hints[last_player].pop(last_card_played_idx)
             hints[last_player].append({"color": "", "value": 0})
 
@@ -261,7 +248,6 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             for i in data.positions:
                 print("\t" + str(i))
 
-                # Upgrade Hints list TODO: CHECK!!!
                 hints[data.destination][i][data.type] = data.value
 
             next_turn()

@@ -45,13 +45,14 @@ def checkRules(s,playerName, data, hints):
 
 
 def playableCard(playerName, data, hints):
-    print("DBG - CHECK RULE 1")
     """
     Check if there is a playable card in the hand of the player with name = playerName
     A card is playable if we have complete knowledge of that card, and can be used 
     if yes: return card's index
     if no: return -1
     """
+
+    if DBG : print("DBG - CHECK RULE 1")
 
     # list of indexes of valid cards
     valid_cards = []
@@ -75,13 +76,15 @@ def playableCard(playerName, data, hints):
 
 
 def discardableCard(playerName, data, hints):
-    print("DBG - CHECK RULE 2")
     """
     Check if there is a discardable card in the hand of the player with name = playerName
     A card is discardable if we have complete knowledge of that card, and can be u
     if yes: return card's index
     if no: return -1
     """
+
+    if DBG : print("DBG - CHECK RULE 2")
+
     # Cannot discard any cards because no Note tokens were used
     if data.usedNoteTokens == 0:
         return -1
@@ -125,12 +128,13 @@ def discardableCard(playerName, data, hints):
 
 
 def otherPlayerPlayableCard(data, hints):
-    print("DBG - CHECK RULE 3")
     """
     Check if another player has a playable card and find the best one, and the type of hint needed
     return the name of that player, and the hint type, and the hint value
     return None, None, None if no cards are playable
     """
+    
+    if DBG : print("DBG - CHECK RULE 3")
     
     # Cannot give hints if all Note tokes were used
     if data.usedNoteTokens == 8:
@@ -158,7 +162,7 @@ def otherPlayerPlayableCard(data, hints):
             if ((value == 1 and (len(data.tableCards[color]) == 0)) or
                 (len(data.tableCards[color]) > 0) and data.tableCards[color][-1].value == value - 1):
 
-                print("DBG: He has a playable card!!  idx = ", idx)
+                if DBG : print("DBG: He has a playable card!!  idx = ", idx)
 
                 # compare it with best so far
 
@@ -191,7 +195,7 @@ def otherPlayerPlayableCard(data, hints):
                     pass
                 else:
                     # first one, or this is more critical, or this hint gives a complete information and the saved one no
-                    print("DBG: inside comparison")
+                    if DBG : print("DBG: inside comparison")
                     if((best_card_idx == -1) or
                         (criticality < best_card_criticality) or
                         (completeness > best_card_hint_completeness)
