@@ -7,7 +7,6 @@ import GameData
 import socket
 from constants import *
 import os
-import time
 
 
 if len(argv) < 4:
@@ -63,8 +62,8 @@ def agent():
             # End of my Turn
             myTurn = False
 
-        # Game is finished, exit
-        os._exit(0)
+    # Game is finished, exit
+    os._exit(0)
 
 def checkRules(playerName, data, hints):
 
