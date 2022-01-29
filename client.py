@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
 
 from sys import argv, stdout
+from telnetlib import NOP
 from threading import Thread
 import GameData
 import socket
 from constants import *
 import os
+import time
 
 
 if len(argv) < 4:
@@ -26,6 +28,49 @@ statuses = ["Lobby", "Game", "GameHint"]
 status = statuses[0]
 
 hintState = ("", "")
+
+AGENT = True 
+started = False #  control the start of the game
+myTurn  = False # control the turn of the agent
+
+def agent():
+    global run
+    global status
+    global started
+    global myTurn
+
+    # Initialize the agent
+    # I'm ready ...
+    s.send(GameData.ClientPlayerStartRequest(playerName).serialize())
+    while not started:
+        pass
+    #print("GAME IS STARTED")
+
+    while run:
+        if True: #status == statuses[1]: TODO: REMOVE?
+
+            # JUST TO START AND SEE WHOSE TURN IS Show Game situation
+            #s.send(GameData.ClientGetGameStateRequest(playerName).serialize())
+
+            # Wait for my turn ... 
+            #print("I'M RUNNING BUT IT's NOT MY TURN")
+            if myTurn:
+                # Now it's my turn!
+                #print("NOW IT'S MY TURN")
+
+                # Show Game situation
+                #print("CHECK SITUATION")
+                #s.send(GameData.ClientGetGameStateRequest(playerName).serialize())
+
+                # Discard First card
+                #s.send(GameData.ClientPlayerDiscardCardRequest(playerName, 0).serialize())
+                # Play first card
+                print(playerName, ": PLAY FIRST CARD")
+                s.send(GameData.ClientPlayerPlayCardRequest(playerName, 0).serialize())
+                # End of my Turn
+                time.sleep(3)
+
+
 
 def manageInput():
     global run
@@ -84,6 +129,10 @@ def manageInput():
             continue
         stdout.flush()
 
+def next_turn():
+    # next turn: get game state from the server
+    s.send(GameData.ClientGetGameStateRequest(playerName).serialize())
+
 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
     request = GameData.ClientPlayerAddData(playerName)
     s.connect((HOST, PORT))
@@ -93,7 +142,10 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
     if type(data) is GameData.ServerPlayerConnectionOk:
         print("Connection accepted by the server. Welcome " + playerName)
     print("[" + playerName + " - " + status + "]: ", end="")
-    Thread(target=manageInput).start()
+    if AGENT:
+        Thread(target=agent).start()
+    else:
+        Thread(target=manageInput).start()
     while run:
         dataOk = False
         data = s.recv(DATASIZE)
@@ -110,9 +162,14 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             print("Game start!")
             s.send(GameData.ClientPlayerReadyData(playerName).serialize())
             status = statuses[1]
+
+            started = True
+            # GAME CAN START INITIALIZE INFORMATIONS !!!
+            next_turn()
         if type(data) is GameData.ServerGameStateData:
+            #print("INSIDE SERVER GAME STATE DATA")
             dataOk = True
-            print("Current player: " + data.currentPlayer)
+            print("\n\nCurrent player: " + data.currentPlayer)
             print("Player hands: ")
             for p in data.players:
                 print(p.toClientString())
@@ -127,7 +184,12 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             for c in data.discardPile:
                 print("\t" + c.toClientString())            
             print("Note tokens used: " + str(data.usedNoteTokens) + "/8")
-            print("Storm tokens used: " + str(data.usedStormTokens) + "/3")
+            print("Storm tokens used: " + str(data.usedStormTokens) + "/3\n\n")
+            if data.currentPlayer == playerName:
+                myTurn = True
+            else:
+                myTurn = False
+
         if type(data) is GameData.ServerActionInvalid:
             dataOk = True
             print("Invalid action performed. Reason:")
@@ -136,19 +198,31 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             dataOk = True
             print("Action valid!")
             print("Current player: " + data.player)
+
+            next_turn()
+
         if type(data) is GameData.ServerPlayerMoveOk:
             dataOk = True
             print("Nice move!")
             print("Current player: " + data.player)
+
+            next_turn()
         if type(data) is GameData.ServerPlayerThunderStrike:
             dataOk = True
             print("OH NO! The Gods are unhappy with you!")
+
+            next_turn()
+
+
         if type(data) is GameData.ServerHintData:
             dataOk = True
             print("Hint type: " + data.type)
             print("Player " + data.destination + " cards with value " + str(data.value) + " are:")
             for i in data.positions:
                 print("\t" + str(i))
+
+            next_turn()
+
         if type(data) is GameData.ServerInvalidDataReceived:
             dataOk = True
             print(data.data)
@@ -158,9 +232,9 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             print(data.score)
             print(data.scoreMessage)
             stdout.flush()
-            #run = False
+            run = False #run = False   COMMENT IF WANT TO PLAY MORE THAN ONE
             print("Ready for a new game!")
         if not dataOk:
             print("Unknown or unimplemented data type: " +  str(type(data)))
         print("[" + playerName + " - " + status + "]: ", end="")
-        stdout.flush()
+        stdout.flush() 
