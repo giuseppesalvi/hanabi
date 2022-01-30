@@ -46,6 +46,11 @@ def agent():
     global started
     global myTurn
     # Initialize the agent
+
+    # Save the moves of the match for each player
+    with open(playerName + "_moves.txt", "a") as f:
+        f.write("NEW MATCH:\n")
+
     # I'm ready ...
     s.send(GameData.ClientPlayerStartRequest(playerName).serialize())
     while not started:
@@ -61,6 +66,8 @@ def agent():
             myTurn = False
 
     # Game is finished, exit
+    with open(playerName + "_moves.txt", "a") as f:
+        f.write("\n\n")
     os._exit(0)
 
 def manageInput():

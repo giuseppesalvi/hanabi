@@ -9,59 +9,63 @@ def checkRules(s,playerName, data, hints):
     data are the data of the match, hints are the hints collected during the game 
     """
 
-    # RULE 1: check if the player has a playable card -> action: play that card
-    cardIdx = playableCard(playerName, data, hints)
-    if(cardIdx != -1):
-        print("\nMOVE: RULE 1 -> play a playable card")
-        s.send(GameData.ClientPlayerPlayCardRequest(playerName, cardIdx).serialize())
+    # Conservative Approach: "play a card only if if you are sure that is playable or no other moves are possible,
+    # in order to avoid loosing matches with 3 red strikes"
+
+
+    with open(playerName + "_moves.txt", "a") as f: 
+        cardIdx = playableCard(playerName, data, hints)
+        if(cardIdx != -1):
+            f.write("\nMOVE: RULE 1 -> play a playable card")
+            s.send(GameData.ClientPlayerPlayCardRequest(playerName, cardIdx).serialize())
+            return
+
+        # RULE 2: check if the player has a discardable card -> action: discard it
+        cardIdx = discardableCard(playerName, data, hints)
+        if(cardIdx != -1):
+            f.write("\nMOVE: RULE 2 -> discard a discardable card")
+            s.send(GameData.ClientPlayerDiscardCardRequest(
+                playerName, cardIdx).serialize())
+            return
+
+        # RULE 3: check if another player has a playable card -> action: give hint
+        player, hint_t, hint_v = otherPlayerPlayableCard(playerName, data, hints)
+        if(player is not None):
+            f.write("\nMOVE: RULE 3 -> hint playable card")
+            s.send(GameData.ClientHintData(
+                playerName, player, hint_t, hint_v).serialize())
+            return
+
+        # RULE 4 : other player has critical card in first position -> action: give hint about it
+        player, hint_t, hint_v = otherPlayerCriticalCardFirstPosition(playerName, data, hints)
+        if(player is not None):
+            f.write("\nMOVE: RULE 4 -> hint critical")
+            s.send(GameData.ClientHintData(
+                playerName, player, hint_t, hint_v).serialize())
+            return
+
+
+        # RULE 5: no playable cards but note tokens available -> action: give hint that gives more info
+        if data.usedNoteTokens < 8:
+            f.write("\nMOVE: RULE 5 -> hint with more informations")
+            player, hint_t, hint_v = hintWithMoreInfo(playerName, data, hints, version = 0)
+            s.send(GameData.ClientHintData(
+                playerName, player, hint_t, hint_v).serialize())
+            return
+
+
+        # RULE 6: if note tokens were used -> action: discard oldest card with no hints, index = 0
+        cardIdx = discardOldestWithNoHints(playerName, data, hints)
+        if(cardIdx != -1):
+            f.write("\nMOVE: RULE 6 -> discard oldest card with no hints")
+            s.send(GameData.ClientPlayerDiscardCardRequest(
+                playerName, cardIdx).serialize())
+            return
+
+        # RULE 7: default: -> play oldest card, index = 0
+        f.write("\nMOVE: RULE 7 -> play oldest card")
+        s.send(GameData.ClientPlayerPlayCardRequest(playerName, 0).serialize())
         return
-
-    # RULE 2: check if the player has a discardable card -> action: discard it
-    cardIdx = discardableCard(playerName, data, hints)
-    if(cardIdx != -1):
-        print("\nMOVE: RULE 2 -> discard a discardable card")
-        s.send(GameData.ClientPlayerDiscardCardRequest(
-            playerName, cardIdx).serialize())
-        return
-
-    # RULE 3: check if another player has a playable card -> action: give hint
-    player, hint_t, hint_v = otherPlayerPlayableCard(playerName, data, hints)
-    if(player is not None):
-        print("\nMOVE: RULE 3 -> hint playable card")
-        s.send(GameData.ClientHintData(
-            playerName, player, hint_t, hint_v).serialize())
-        return
-
-    # RULE 4 : other player has critical card in first position -> action: give hint about it
-    player, hint_t, hint_v = otherPlayerCriticalCardFirstPosition(playerName, data, hints)
-    if(player is not None):
-        print("\nMOVE: RULE 4 -> hint critical")
-        s.send(GameData.ClientHintData(
-            playerName, player, hint_t, hint_v).serialize())
-        return
-
-
-    # RULE 5: no playable cards but note tokens available -> action: give hint that gives more info
-    if data.usedNoteTokens < 8:
-        print("\nMOVE: RULE 5 -> hint with more informations")
-        player, hint_t, hint_v = hintWithMoreInfo(playerName, data, hints, version = 0)
-        s.send(GameData.ClientHintData(
-            playerName, player, hint_t, hint_v).serialize())
-        return
-
-
-    # RULE 6: if note tokens were used -> action: discard oldest card with no hints, index = 0
-    cardIdx = discardOldestWithNoHints(playerName, data, hints)
-    if(cardIdx != -1):
-        print("\nMOVE: RULE 6 -> discard oldest card with no hints")
-        s.send(GameData.ClientPlayerDiscardCardRequest(
-            playerName, cardIdx).serialize())
-        return
-
-    # RULE 7: default: -> play oldest card, index = 0
-    print("\nMOVE: RULE 7 -> play oldest card")
-    s.send(GameData.ClientPlayerPlayCardRequest(playerName, 0).serialize())
-    return
     
 
 
