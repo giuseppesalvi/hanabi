@@ -3,7 +3,8 @@ import GameData
 
 DBG = False
 
-def checkRules(s,playerName, data, hints):
+
+def checkRules(s, playerName, data, hints):
     """
     Check the ruleSet, if a rule is satisfied, do the corresponding action
     s socket, playerName is the name of the agent playing the game,
@@ -18,22 +19,24 @@ def checkRules(s,playerName, data, hints):
     for rule in rule_set:
         # go throught the rules in the order of the rule_set
         # when the first rule is satisfied, it performs the action and returns true
-        if rule(s, playerName,data, hints):
+        if rule(s, playerName, data, hints):
             return
 
-   
-def rule_1(s,playerName, data, hints):
+
+def rule_1(s, playerName, data, hints):
     """
     RULE 1: check if the player has a playable card -> action: play it
     """
     cardIdx = playableCard(playerName, data, hints)
     if(cardIdx != -1):
         print("\nMOVE: RULE 1 -> play a playable card")
-        s.send(GameData.ClientPlayerPlayCardRequest(playerName, cardIdx).serialize())
+        s.send(GameData.ClientPlayerPlayCardRequest(
+            playerName, cardIdx).serialize())
         return True
     return False
 
-def rule_2(s,playerName, data, hints):
+
+def rule_2(s, playerName, data, hints):
     """
     RULE 2: check if the player has a discardable card -> action: discard it
     """
@@ -45,7 +48,8 @@ def rule_2(s,playerName, data, hints):
         return True
     return False
 
-def rule_3(s,playerName, data, hints):
+
+def rule_3(s, playerName, data, hints):
     """
     RULE 3: check if another player has a playable card -> action: give hint
     """
@@ -57,11 +61,13 @@ def rule_3(s,playerName, data, hints):
         return True
     return False
 
-def rule_4(s,playerName, data, hints):
+
+def rule_4(s, playerName, data, hints):
     """
     RULE 4 : other player has critical card in first position -> action: give hint
     """
-    player, hint_t, hint_v = otherPlayerCriticalCardFirstPosition(playerName, data, hints)
+    player, hint_t, hint_v = otherPlayerCriticalCardFirstPosition(
+        playerName, data, hints)
     if(player is not None):
         print("\nMOVE: RULE 4 -> hint critical")
         s.send(GameData.ClientHintData(
@@ -69,11 +75,13 @@ def rule_4(s,playerName, data, hints):
         return True
     return False
 
-def rule_5(s,playerName, data, hints):
+
+def rule_5(s, playerName, data, hints):
     """
     RULE 5A : other player has a discardable card -> action: give hint
     """
-    player, hint_t, hint_v = otherPlayerDiscardableCard(playerName, data, hints, onlyComplete=True)
+    player, hint_t, hint_v = otherPlayerDiscardableCard(
+        playerName, data, hints, onlyComplete=True)
     if player is not None:
         print("\nMOVE: RULE 5a -> hint discardable card")
         s.send(GameData.ClientHintData(
@@ -81,19 +89,22 @@ def rule_5(s,playerName, data, hints):
         return True
     return False
 
-def rule_6(s,playerName, data, hints):
+
+def rule_6(s, playerName, data, hints):
     """
     RULE 6: no playable cards but note tokens available -> action: give hint that gives more info
     """
     if data.usedNoteTokens < 8:
         print("\nMOVE: RULE 6 -> hint with more informations")
-        player, hint_t, hint_v = hintWithMoreInfo(playerName, data, hints, version = 1)
+        player, hint_t, hint_v = hintWithMoreInfo(
+            playerName, data, hints, version=1)
         s.send(GameData.ClientHintData(
             playerName, player, hint_t, hint_v).serialize())
         return True
     return False
 
-def rule_7(s,playerName, data, hints):
+
+def rule_7(s, playerName, data, hints):
     """
     RULE 7: if note tokens were used -> action: discard oldest card with no hints, index = 0
     """
@@ -104,8 +115,9 @@ def rule_7(s,playerName, data, hints):
             playerName, cardIdx).serialize())
         return True
     return False
-        
-def rule_8(s,playerName, data, hints):
+
+
+def rule_8(s, playerName, data, hints):
     """
     RULE 8: default: risky play -> play oldest card, index = 0
     """
@@ -122,7 +134,8 @@ def playableCard(playerName, data, hints):
     if no: return -1
     """
 
-    if DBG : print("DBG - CHECK RULE 1")
+    if DBG:
+        print("DBG - CHECK RULE 1")
 
     # list of indexes of valid cards
     valid_cards = []
@@ -136,7 +149,7 @@ def playableCard(playerName, data, hints):
             # If it is a 1 and the pile is empty for that color
             # Or If last added in the tableCard for that color has value - 1
             if ((value == 1 and len(data.tableCards[color]) == 0) or
-                (len(data.tableCards[color]) > 0) and data.tableCards[color][-1].value == value - 1):
+                    (len(data.tableCards[color]) > 0) and data.tableCards[color][-1].value == value - 1):
                 valid_cards.append(idx)
 
     if len(valid_cards) > 0:
@@ -153,7 +166,8 @@ def discardableCard(playerName, data, hints):
     if no: return -1
     """
 
-    if DBG : print("DBG - CHECK RULE 2")
+    if DBG:
+        print("DBG - CHECK RULE 2")
 
     # Cannot discard any cards because no Note tokens were used
     if data.usedNoteTokens == 0:
@@ -203,17 +217,19 @@ def otherPlayerPlayableCard(playerName, data, hints):
     return the name of that player, and the hint type, and the hint value
     return None, None, None if no cards are playable
     """
-    
-    if DBG : print("DBG - CHECK RULE 3")
+
+    if DBG:
+        print("DBG - CHECK RULE 3")
 
     # Cannot give hints if all Note tokes were used
     if data.usedNoteTokens == 8:
-        return None, None, None 
-
+        return None, None, None
 
     best_card_idx = -1
-    best_card_criticality = -1 # How many copies are left in the deck (or other player hands) 
-    best_card_hint_completeness = -1 # If a hint would give complete knowledge to the player, hints already present on that card
+    # How many copies are left in the deck (or other player hands)
+    best_card_criticality = -1
+    # If a hint would give complete knowledge to the player, hints already present on that card
+    best_card_hint_completeness = -1
     best_card_player = None
     best_card_hint_t = None
     best_card_hint_v = None
@@ -223,7 +239,7 @@ def otherPlayerPlayableCard(playerName, data, hints):
         if p.name == playerName:
             continue
         # we can see hands of other players, with complete info
-        hand = p.hand 
+        hand = p.hand
         for idx, card in enumerate(hand):
             #color = card["color"]
             #value = card["value"]
@@ -233,9 +249,10 @@ def otherPlayerPlayableCard(playerName, data, hints):
             # If it is a 1 and the pile is empty for that color
             # Or If last added in the tableCard for that color has value - 1
             if ((value == 1 and (len(data.tableCards[color]) == 0)) or
-                (len(data.tableCards[color]) > 0) and data.tableCards[color][-1].value == value - 1):
+                    (len(data.tableCards[color]) > 0) and data.tableCards[color][-1].value == value - 1):
 
-                if DBG : print("DBG: He has a playable card!!  idx = ", idx)
+                if DBG:
+                    print("DBG: He has a playable card!!  idx = ", idx)
 
                 # compare it with best so far
 
@@ -260,7 +277,7 @@ def otherPlayerPlayableCard(playerName, data, hints):
                 hint_col = (hand_h[idx]["color"] == color)
                 hint_val = (hand_h[idx]["value"] == value)
                 completeness = 0
-                if ((hint_col == True and hint_val == False) or (hint_col==False and hint_val == True)):
+                if ((hint_col == True and hint_val == False) or (hint_col == False and hint_val == True)):
                     completeness = 1
 
                 # if both hints are already given, look for other cards
@@ -268,11 +285,12 @@ def otherPlayerPlayableCard(playerName, data, hints):
                     pass
                 else:
                     # first one, or this is more critical, or this hint gives a complete information and the saved one no
-                    if DBG : print("DBG: inside comparison")
+                    if DBG:
+                        print("DBG: inside comparison")
                     if((best_card_idx == -1) or
                         (criticality < best_card_criticality) or
                         (completeness > best_card_hint_completeness)
-                        ):
+                       ):
                         best_card_player = p.name
                         best_card_idx = idx
                         best_card_criticality = criticality
@@ -285,10 +303,8 @@ def otherPlayerPlayableCard(playerName, data, hints):
                             best_card_hint_t = "color"
                             best_card_hint_v = color
 
-
     return best_card_player, best_card_hint_t, best_card_hint_v
 
-   
 
 def otherPlayerCriticalCardFirstPosition(playerName, data, hints):
     """
@@ -298,15 +314,16 @@ def otherPlayerCriticalCardFirstPosition(playerName, data, hints):
     return None, None, None if no such cards are found
     """
 
-    if DBG : print("DBG - CHECK RULE 4")
+    if DBG:
+        print("DBG - CHECK RULE 4")
 
     # Cannot give hints if all Note tokes were used
     if data.usedNoteTokens == 8:
-        return None, None, None 
-
+        return None, None, None
 
     best_card_idx = -1
-    best_card_hint_completeness = -1 # If a hint would give complete knowledge to the player, hints already present on that card
+    # If a hint would give complete knowledge to the player, hints already present on that card
+    best_card_hint_completeness = -1
     best_card_player = None
     best_card_hint_t = None
     best_card_hint_v = None
@@ -316,7 +333,7 @@ def otherPlayerCriticalCardFirstPosition(playerName, data, hints):
         if p.name == playerName:
             continue
         # we can see hands of other players, with complete info
-        hand = p.hand 
+        hand = p.hand
 
         # check first card
         card = hand[0]
@@ -344,7 +361,7 @@ def otherPlayerCriticalCardFirstPosition(playerName, data, hints):
         hint_col = (hand_h[0]["color"] == color)
         hint_val = (hand_h[0]["value"] == value)
         completeness = 0
-        if ((hint_col == True and hint_val == False) or (hint_col==False and hint_val == True)):
+        if ((hint_col == True and hint_val == False) or (hint_col == False and hint_val == True)):
             completeness = 1
 
         # if both hints are already given, look for other cards
@@ -352,11 +369,12 @@ def otherPlayerCriticalCardFirstPosition(playerName, data, hints):
                 pass
             else:
                 # if this is critical and is the first one, or this hint gives first information and the saved one the second
-                if DBG : print("DBG: inside comparison")
-                if (criticality == 1 and( 
+                if DBG:
+                    print("DBG: inside comparison")
+                if (criticality == 1 and (
                     (best_card_idx == -1) or
                     (completeness < best_card_hint_completeness)
-                    )):
+                )):
                     best_card_player = p.name
                     best_card_hint_completeness = completeness
                     # giving hint on color is better, if the hint is not already present
@@ -369,6 +387,7 @@ def otherPlayerCriticalCardFirstPosition(playerName, data, hints):
 
     return best_card_player, best_card_hint_t, best_card_hint_v
 
+
 def otherPlayerDiscardableCard(playerName, data, hints, onlyComplete=True):
     """
     Check if another player has a discardable card, give a hint about it
@@ -376,18 +395,19 @@ def otherPlayerDiscardableCard(playerName, data, hints, onlyComplete=True):
     in this way the player will discard that card surely, and won't consider it as a hint for good card
     """
 
-    if DBG : print("DBG - CHECK RULE 5A")
+    if DBG:
+        print("DBG - CHECK RULE 5A")
 
     # Cannot give hints if all Note tokes were used
     if data.usedNoteTokens == 8:
-        return None, None, None 
+        return None, None, None
 
     for p in data.players:
         # Skip the current players' hand: we have no informations TODO: CHECK if it's correct
         if p.name == playerName:
             continue
         # we can see hands of other players, with complete info
-        hand = p.hand 
+        hand = p.hand
         for idx, card in enumerate(hand):
             color = card.color
             value = card.value
@@ -404,12 +424,12 @@ def otherPlayerDiscardableCard(playerName, data, hints, onlyComplete=True):
                 # if the player already has a hint about the color, but not about the value
                 elif hint_col:
                     return p.name, "value", value
-                
-                # if the player already has a hint about the value, but not about the color 
+
+                # if the player already has a hint about the value, but not about the color
                 elif hint_val:
                     return p.name, "color", color
-                
-                # if the player has no hints 
+
+                # if the player has no hints
                 # if version is "onlyComplete" do not consider this card
                 else:
                     if not onlyComplete:
@@ -419,7 +439,7 @@ def otherPlayerDiscardableCard(playerName, data, hints, onlyComplete=True):
             # TODO: check if in the discard pile there are all the cards for that color that block it
             # TODO: check if in the discard pile there are all the cards for that value that block it
 
-    return None, None, None 
+    return None, None, None
 
 
 def hintWithMoreInfo(playerName, data, hints, version=1):
@@ -428,7 +448,8 @@ def hintWithMoreInfo(playerName, data, hints, version=1):
     version is the version of this algorithm: different ways of intending "more information"
     """
 
-    if DBG : print("DBG - CHECK RULE 6")
+    if DBG:
+        print("DBG - CHECK RULE 6")
 
     # Go through all the possible hints and save the best,
     # A hint that gives complete information is more valuable than a hint that gives non complete information
@@ -448,13 +469,13 @@ def hintWithMoreInfo(playerName, data, hints, version=1):
         hand = p.hand
 
         values = [1, 2, 3, 4, 5]
-        colors = ["red","yellow","green","blue","white"]
+        colors = ["red", "yellow", "green", "blue", "white"]
 
         # Check all possible hints and count how much new info they would bring
         # Go through all possible hints of type value
         for val in values:
             hint_t = "value"
-            hint_v = val 
+            hint_v = val
             n_complete = 0
             n_non_complete = 0
 
@@ -462,12 +483,12 @@ def hintWithMoreInfo(playerName, data, hints, version=1):
             for idx, card in enumerate(hand):
 
                 # If the card has the same value and the same hint is not already there
-                if card.value == val and  hints[playerName][idx]["value"] != card.value:
+                if card.value == val and hints[playerName][idx]["value"] != card.value:
                     n_non_complete += 1
-                
+
                     # If a hint for the same card but for the other type is present, then this would be a complete hint
                     if hints[playerName][idx]["color"] == card.color:
-                        n_non_complete -=1 # remove the previous +1
+                        n_non_complete -= 1  # remove the previous +1
                         n_complete += 1
 
             if n_complete > best_n_complete or n_non_complete > best_n_non_complete:
@@ -481,7 +502,7 @@ def hintWithMoreInfo(playerName, data, hints, version=1):
         # Go through all possible hints of type color
         for col in colors:
             hint_t = "color"
-            hint_v = col 
+            hint_v = col
             n_complete = 0
             n_non_complete = 0
 
@@ -489,33 +510,35 @@ def hintWithMoreInfo(playerName, data, hints, version=1):
             for idx, card in enumerate(hand):
 
                 # If the card has the same color and the same hint is not already there
-                if card.color == col and  hints[playerName][idx]["color"] != card.color:
+                if card.color == col and hints[playerName][idx]["color"] != card.color:
                     n_non_complete += 1
-                
+
                     # If a hint for the same card but for the other type is present, then this would be a complete hint
                     if hints[playerName][idx]["value"] == card.value:
-                        n_non_complete -=1 # remove the previous +1
+                        n_non_complete -= 1  # remove the previous +1
                         n_complete += 1
 
             if version == 0:
-                # complete information is always more valuable than non complete 
+                # complete information is always more valuable than non complete
                 condition = n_complete > best_n_complete or n_non_complete > best_n_non_complete
-            
 
             elif version == 1:
                 # complete information has the same value as non complete
-                condition = 1 * n_complete  + n_non_complete > 1 * best_n_complete + best_n_non_complete
+                condition = 1 * n_complete + n_non_complete > 1 * \
+                    best_n_complete + best_n_non_complete
 
             elif version == 2:
-                # complete information has twice the value as non complete 
-                condition = 2 * n_complete  + n_non_complete > 2 * best_n_complete + best_n_non_complete
+                # complete information has twice the value as non complete
+                condition = 2 * n_complete + n_non_complete > 2 * \
+                    best_n_complete + best_n_non_complete
 
             elif version == 3:
                 # complete information has three time the value as non complete
-                condition = 3 * n_complete  + n_non_complete > 3 * best_n_complete + best_n_non_complete
+                condition = 3 * n_complete + n_non_complete > 3 * \
+                    best_n_complete + best_n_non_complete
 
             if condition:
-                 # This is now the best hint!
+                # This is now the best hint!
                 best_player = p.name
                 best_hint_t = hint_t
                 best_hint_v = hint_v
@@ -523,14 +546,16 @@ def hintWithMoreInfo(playerName, data, hints, version=1):
                 best_n_non_complete = n_non_complete
 
     return best_player, best_hint_t, best_hint_v
- 
+
+
 def discardOldestWithNoHints(playerName, data, hints):
     """
     Discard oldest card with no hints
     return the idx of that card, -1 if cannot discard any card, because 0 note tokens were used
     """
 
-    if DBG : print("DBG - CHECK RULE 7")
+    if DBG:
+        print("DBG - CHECK RULE 7")
 
     # Cannot discard any cards because no Note tokens were used
     if data.usedNoteTokens == 0:
@@ -541,7 +566,7 @@ def discardOldestWithNoHints(playerName, data, hints):
     best_idx = -1
 
     # Go through all the cards in the hand
-    for idx,card in enumerate(hand):
+    for idx, card in enumerate(hand):
         value = card["value"]
         color = card["color"]
         # If it has no hints, the first becomes the best
@@ -552,7 +577,7 @@ def discardOldestWithNoHints(playerName, data, hints):
     if best_idx != -1:
         return best_idx
 
-    # All cards have hints, if i had full knowledge about a surely discardable card 
+    # All cards have hints, if i had full knowledge about a surely discardable card
     # I would have already discarded it from a previous rule
     # So discard the first one
     return 0

@@ -56,13 +56,14 @@ def agent():
         if myTurn:
 
             # Check Rules and do corresponding action
-            checkRules(s,playerName, data_seen, hints)
+            checkRules(s, playerName, data_seen, hints)
 
             # End of my Turn
             myTurn = False
 
     # Game is finished, exit
     os._exit(0)
+
 
 def manageInput():
     global run
@@ -73,7 +74,7 @@ def manageInput():
         if command == "exit":
             run = False
             os._exit(0)
-        #DBG
+        # DBG
         elif command == "hints" and status == statuses[1]:
             print("HINTS SO FAR")
             print(hints)
