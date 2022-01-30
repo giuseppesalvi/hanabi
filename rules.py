@@ -3,6 +3,8 @@ import GameData
 
 DBG = False
 
+RULE6VERSION = 1
+RULE5COMPLETEONLY = True
 
 def checkRules(s, playerName, data, hints):
     """
@@ -10,6 +12,9 @@ def checkRules(s, playerName, data, hints):
     s socket, playerName is the name of the agent playing the game,
     data are the data of the match, hints are the hints collected during the game 
     """
+
+    global RULE5COMPLETEONLY
+    global RULE6VERSION
 
     # Conservative Approach: "play a card only if if you are sure that is playable or no other moves are possible,
     # in order to avoid loosing matches with 3 red strikes"
@@ -19,6 +24,10 @@ def checkRules(s, playerName, data, hints):
 
     # 2players ?
     # rule_set = [rule_1, rule_2, rule_3, rule_4, rule_7, rule_8]
+
+    # Choose versions for some of the rules
+    RULE5COMPLETEONLY = True
+    RULE6VERSION = 2
 
     for rule in rule_set:
         # go throught the rules in the order of the rule_set
@@ -85,7 +94,7 @@ def rule_5(s, playerName, data, hints):
     RULE 5 : other player has a discardable card -> action: give hint
     """
     player, hint_t, hint_v = otherPlayerDiscardableCard(
-        playerName, data, hints, onlyComplete=True)
+        playerName, data, hints, onlyComplete=RULE5COMPLETEONLY)
     if player is not None:
         print("\nMOVE: RULE 5a -> hint discardable card")
         s.send(GameData.ClientHintData(
@@ -101,7 +110,7 @@ def rule_6(s, playerName, data, hints):
     if data.usedNoteTokens < 8:
         print("\nMOVE: RULE 6 -> hint with more informations")
         player, hint_t, hint_v = hintWithMoreInfo(
-            playerName, data, hints, version=1)
+            playerName, data, hints, version=RULE6VERSION)
         s.send(GameData.ClientHintData(
             playerName, player, hint_t, hint_v).serialize())
         return True
