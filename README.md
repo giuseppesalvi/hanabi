@@ -2,6 +2,25 @@
 
 Exam of computational intelligence 2021 - 2022. It requires teaching the client to play the game of Hanabi (rules can be found [here](https://www.spillehulen.dk/media/102616/hanabi-card-game-rules.pdf)).
 
+Author: Giuseppe salvi, s287583
+
+Approach: Rule based agent, conservative approach to limit lost matches with 0 points, play a card only if if you are sure that is playable or no other moves are possible
+
+Rules:
++ Rule 1: the player has a playable card -> action: play it
++ Rule 2: the player has a discardable card -> action: discard it
++ Rule 3: other player has a playable card -> action: give hint
++ Rule 4: other player has critical card in first position -> action: give hint
++ Rule 5: other player has a discardable card -> action: give hint
++ Rule 6: no playable cards but note tokens available -> action: give hint that gives more info
++ Rule 7: all note tokens were used -> action: discard oldest card with no hints
++ Rule 8: default: risky play -> play oldest card
+
+Inpirations:
++ https://www.semanticscholar.org/paper/Solving-Hanabi%3A-Estimating-Hands-by-Opponent%27s-in-Osawa/d7a7b4158ceaa20756e9b2f577654d2da1789bc4
++ https://bradbambara.wordpress.com/2017/05/11/a-winning-hanabi-strategy/
++ https://boardgamegeek.com/thread/804762/elusive-25-point-game-tips-effective-hanabi-play
+
 ## Server
 
 The server accepts passing objects provided in GameData.py back and forth to the clients.

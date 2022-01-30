@@ -14,7 +14,11 @@ def checkRules(s, playerName, data, hints):
     # Conservative Approach: "play a card only if if you are sure that is playable or no other moves are possible,
     # in order to avoid loosing matches with 3 red strikes"
 
+    # Select which rules to apply and their order
     rule_set = [rule_1, rule_2, rule_3, rule_4, rule_5, rule_6, rule_7, rule_8]
+
+    # 2players ?
+    # rule_set = [rule_1, rule_2, rule_3, rule_4, rule_7, rule_8]
 
     for rule in rule_set:
         # go throught the rules in the order of the rule_set
@@ -78,7 +82,7 @@ def rule_4(s, playerName, data, hints):
 
 def rule_5(s, playerName, data, hints):
     """
-    RULE 5A : other player has a discardable card -> action: give hint
+    RULE 5 : other player has a discardable card -> action: give hint
     """
     player, hint_t, hint_v = otherPlayerDiscardableCard(
         playerName, data, hints, onlyComplete=True)
@@ -106,7 +110,7 @@ def rule_6(s, playerName, data, hints):
 
 def rule_7(s, playerName, data, hints):
     """
-    RULE 7: if note tokens were used -> action: discard oldest card with no hints, index = 0
+    RULE 7: if note tokens were used -> action: discard oldest card with no hints
     """
     cardIdx = discardOldestWithNoHints(playerName, data, hints)
     if(cardIdx != -1):
@@ -235,7 +239,7 @@ def otherPlayerPlayableCard(playerName, data, hints):
     best_card_hint_v = None
 
     for p in data.players:
-        # Skip the current players' hand: we have no informations TODO: CHECK if it's correct
+        # Skip the current players' hand: we have no informations 
         if p.name == playerName:
             continue
         # we can see hands of other players, with complete info
@@ -329,7 +333,7 @@ def otherPlayerCriticalCardFirstPosition(playerName, data, hints):
     best_card_hint_v = None
 
     for p in data.players:
-        # Skip the current players' hand: we have no informations TODO: CHECK if it's correct
+        # Skip the current players' hand: we have no informations 
         if p.name == playerName:
             continue
         # we can see hands of other players, with complete info
@@ -396,14 +400,14 @@ def otherPlayerDiscardableCard(playerName, data, hints, onlyComplete=True):
     """
 
     if DBG:
-        print("DBG - CHECK RULE 5A")
+        print("DBG - CHECK RULE 5")
 
     # Cannot give hints if all Note tokes were used
     if data.usedNoteTokens == 8:
         return None, None, None
 
     for p in data.players:
-        # Skip the current players' hand: we have no informations TODO: CHECK if it's correct
+        # Skip the current players' hand: we have no informations 
         if p.name == playerName:
             continue
         # we can see hands of other players, with complete info
@@ -463,7 +467,7 @@ def hintWithMoreInfo(playerName, data, hints, version=1):
 
     # Look all the other players hands
     for p in data.players:
-        # Skip the current players' hand: we have no informations TODO: CHECK if it's correct
+        # Skip the current players' hand: we have no informations 
         if p.name == playerName:
             continue
         hand = p.hand
