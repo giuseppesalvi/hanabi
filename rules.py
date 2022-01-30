@@ -25,12 +25,21 @@ def checkRules(s,playerName, data, hints):
         return
 
     # RULE 3: check if another player has a playable card -> action: give hint
-    player, hint_t, hint_v = otherPlayerPlayableCard(data, hints)
+    player, hint_t, hint_v = otherPlayerPlayableCard(playerName, data, hints)
     if(player is not None):
         print("\nMOVE: RULE 3 -> hint playable card")
         s.send(GameData.ClientHintData(
             playerName, player, hint_t, hint_v).serialize())
         return
+
+    # RULE 4: no playable cards but note tokens available -> aciton: give hint that gives more info
+    if data.usedNoteTokens < 8:
+        print("\nMOVE: RULE 4 -> hint with more informations")
+        player, hint_t, hint_v = hintWithMoreInfo(playerName, data, hints, version = 1)
+        s.send(GameData.ClientHintData(
+            playerName, player, hint_t, hint_v).serialize())
+        return
+
 
     # RULE 5: if note tokens were used -> action: discard oldest card, index = 0
     if data.usedNoteTokens > 0:
@@ -129,7 +138,7 @@ def discardableCard(playerName, data, hints):
     return -1
 
 
-def otherPlayerPlayableCard(data, hints):
+def otherPlayerPlayableCard(playerName, data, hints):
     """
     Check if another player has a playable card and find the best one, and the type of hint needed
     return the name of that player, and the hint type, and the hint value
@@ -151,6 +160,9 @@ def otherPlayerPlayableCard(data, hints):
     best_card_hint_v = None
 
     for p in data.players:
+        # Skip the current players' hand: we have no informations TODO: CHECK if it's correct
+        if p.name == playerName:
+            continue
         # we can see hands of other players, with complete info
         hand = p.hand 
         for idx, card in enumerate(hand):
@@ -217,3 +229,103 @@ def otherPlayerPlayableCard(data, hints):
 
     return best_card_player, best_card_hint_t, best_card_hint_v
 
+
+def hintWithMoreInfo(playerName, data, hints, version=1):
+    """
+    Give the hint that gives more informations
+    version is the version of this algorithm: different ways of intending "more information"
+    """
+
+    # Go through all the possible hints and save the best,
+    # A hint that gives complete information is more valuable than a hint that gives non complete information
+
+    best_player = None
+    best_hint_t = None
+    best_hint_v = None
+
+    best_n_complete = 0
+    best_n_non_complete = 0
+
+    # Look all the other players hands
+    for p in data.players:
+        # Skip the current players' hand: we have no informations TODO: CHECK if it's correct
+        if p.name == playerName:
+            continue
+        hand = p.hand
+
+        values = [1, 2, 3, 4, 5]
+        colors = ["red","yellow","green","blue","white"]
+
+        # Check all possible hints and count how much new info they would bring
+        # Go through all possible hints of type value
+        for val in values:
+            hint_t = "value"
+            hint_v = val 
+            n_complete = 0
+            n_non_complete = 0
+
+            # Go through each card in player's hand
+            for idx, card in enumerate(hand):
+
+                # If the card has the same value and the same hint is not already there
+                if card.value == val and  hints[playerName][idx]["value"] != card.value:
+                    n_non_complete += 1
+                
+                    # If a hint for the same card but for the other type is present, then this would be a complete hint
+                    if hints[playerName][idx]["color"] == card.color:
+                        n_non_complete -=1 # remove the previous +1
+                        n_complete += 1
+
+            if n_complete > best_n_complete or n_non_complete > best_n_non_complete:
+                # This is now the best hint!
+                best_player = p.name
+                best_hint_t = hint_t
+                best_hint_v = hint_v
+                best_n_complete = n_complete
+                best_n_non_complete = n_non_complete
+
+        # Go through all possible hints of type color
+        for col in colors:
+            hint_t = "color"
+            hint_v = col 
+            n_complete = 0
+            n_non_complete = 0
+
+            # Go through each card in player's hand
+            for idx, card in enumerate(hand):
+
+                # If the card has the same color and the same hint is not already there
+                if card.color == col and  hints[playerName][idx]["color"] != card.color:
+                    n_non_complete += 1
+                
+                    # If a hint for the same card but for the other type is present, then this would be a complete hint
+                    if hints[playerName][idx]["value"] == card.value:
+                        n_non_complete -=1 # remove the previous +1
+                        n_complete += 1
+
+            if version == 0:
+                # complete information is always more valuable than non complete 
+                condition = n_complete > best_n_complete or n_non_complete > best_n_non_complete
+            
+
+            elif version == 1:
+                # complete information has the same value as non complete
+                condition = 1 * n_complete  + n_non_complete > 1 * best_n_complete + best_n_non_complete
+
+            elif version == 2:
+                # complete information has twice the value as non complete 
+                condition = 2 * n_complete  + n_non_complete > 2 * best_n_complete + best_n_non_complete
+
+            elif version == 3:
+                # complete information has three time the value as non complete
+                condition = 3 * n_complete  + n_non_complete > 3 * best_n_complete + best_n_non_complete
+
+            if condition:
+                 # This is now the best hint!
+                best_player = p.name
+                best_hint_t = hint_t
+                best_hint_v = hint_v
+                best_n_complete = n_complete
+                best_n_non_complete = n_non_complete
+
+    return best_player, best_hint_t, best_hint_v
