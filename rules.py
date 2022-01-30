@@ -32,20 +32,30 @@ def checkRules(s,playerName, data, hints):
             playerName, player, hint_t, hint_v).serialize())
         return
 
-    # RULE 4: no playable cards but note tokens available -> aciton: give hint that gives more info
-    if data.usedNoteTokens < 8:
-        print("\nMOVE: RULE 4 -> hint with more informations")
-        player, hint_t, hint_v = hintWithMoreInfo(playerName, data, hints, version = 1)
+    # RULE 7 : other player has critical card in first position -> action: give hint about it
+    player, hint_t, hint_v = otherPlayerCriticalCardFirstPosition(playerName, data, hints)
+    if(player is not None):
+        print("\nMOVE: RULE 7 -> hint critical")
         s.send(GameData.ClientHintData(
             playerName, player, hint_t, hint_v).serialize())
         return
 
 
-    # RULE 5: if note tokens were used -> action: discard oldest card, index = 0
-    if data.usedNoteTokens > 0:
-        print("\nMOVE: RULE 5 -> discard oldest card")
+    # RULE 4: no playable cards but note tokens available -> action: give hint that gives more info
+    if data.usedNoteTokens < 8:
+        print("\nMOVE: RULE 4 -> hint with more informations")
+        player, hint_t, hint_v = hintWithMoreInfo(playerName, data, hints, version = 0)
+        s.send(GameData.ClientHintData(
+            playerName, player, hint_t, hint_v).serialize())
+        return
+
+
+    # RULE 5: if note tokens were used -> action: discard oldest card with no hints, index = 0
+    cardIdx = discardOldestWithNoHints(playerName, data, hints)
+    if(cardIdx != -1):
+        print("\nMOVE: RULE 5 -> discard oldest card with no hints")
         s.send(GameData.ClientPlayerDiscardCardRequest(
-            playerName, 0).serialize())
+            playerName, cardIdx).serialize())
         return
 
     # RULE 6: default: -> play oldest card, index = 0
@@ -89,7 +99,7 @@ def playableCard(playerName, data, hints):
 def discardableCard(playerName, data, hints):
     """
     Check if there is a discardable card in the hand of the player with name = playerName
-    A card is discardable if we have complete knowledge of that card, and can be u
+    A card is discardable if we have complete knowledge of that card, and can be discarded 
     if yes: return card's index
     if no: return -1
     """
@@ -329,3 +339,116 @@ def hintWithMoreInfo(playerName, data, hints, version=1):
                 best_n_non_complete = n_non_complete
 
     return best_player, best_hint_t, best_hint_v
+    
+
+def otherPlayerCriticalCardFirstPosition(playerName, data, hints):
+    """
+    Check if another player has a critical card in the first position,
+    which is the more risky position, since players discard it if no other actions are possible
+    return the name of that player, and the hint type, and the hint value
+    return None, None, None if no such cards are found
+    """
+
+    if DBG : print("DBG - CHECK RULE 7")
+
+    # Cannot give hints if all Note tokes were used
+    if data.usedNoteTokens == 8:
+        return None, None, None 
+
+
+    best_card_idx = -1
+    best_card_hint_completeness = -1 # If a hint would give complete knowledge to the player, hints already present on that card
+    best_card_player = None
+    best_card_hint_t = None
+    best_card_hint_v = None
+
+    for p in data.players:
+        # Skip the current players' hand: we have no informations TODO: CHECK if it's correct
+        if p.name == playerName:
+            continue
+        # we can see hands of other players, with complete info
+        hand = p.hand 
+
+        # check first card
+        card = hand[0]
+        color = card.color
+        value = card.value
+
+        # see criticality : how many copies are left for that card
+        total = -1
+        if value == 1:
+            total = 3
+        elif value == 5:
+            total = 1
+        else:
+            total = 2
+
+        # see how many copies of that card are still in the deck (or in other hands)
+        for c in data.discardPile:
+            if ((c.color == color) and (c.value == value)):
+                total -= 1
+        criticality = total
+        # if it's the last copy: criticality = 1
+
+        # see if it's the first hint, the second or two hints are already given
+        hand_h = hints[p.name]
+        hint_col = (hand_h[0]["color"] == color)
+        hint_val = (hand_h[0]["value"] == value)
+        completeness = 0
+        if ((hint_col == True and hint_val == False) or (hint_col==False and hint_val == True)):
+            completeness = 1
+
+        # if both hints are already given, look for other cards
+            if (hint_col and hint_val):
+                pass
+            else:
+                # if this is critical and is the first one, or this hint gives first information and the saved one the second
+                if DBG : print("DBG: inside comparison")
+                if (criticality == 1 and( 
+                    (best_card_idx == -1) or
+                    (completeness < best_card_hint_completeness)
+                    )):
+                    best_card_player = p.name
+                    best_card_hint_completeness = completeness
+                    # giving hint on color is better, if the hint is not already present
+                    if hint_col:
+                        best_card_hint_t = "value"
+                        best_card_hint_v = value
+                    else:
+                        best_card_hint_t = "color"
+                        best_card_hint_v = color
+
+    return best_card_player, best_card_hint_t, best_card_hint_v
+
+
+def discardOldestWithNoHints(playerName, data, hints):
+    """
+    Discard oldest card with no hints
+    """
+
+    if DBG : print("DBG - CHECK RULE 5")
+
+    # Cannot discard any cards because no Note tokens were used
+    if data.usedNoteTokens == 0:
+        return -1
+
+    hand = hints[playerName]
+
+    best_idx = -1
+
+    # Go through all the cards in the hand
+    for idx,card in enumerate(hand):
+        value = card["value"]
+        color = card["color"]
+        # If it has no hints, the first becomes the best
+        if value == 0 and color == "":
+            best_idx = idx
+
+    # If found one
+    if best_idx != -1:
+        return best_idx
+
+    # All cards have hints, if i had full knowledge about a surely discardable card 
+    # I would have already discarded it from a previous rule
+    # So discard the first one
+    return 0
