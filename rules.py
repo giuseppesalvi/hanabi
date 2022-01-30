@@ -23,7 +23,9 @@ def checkRules(s,playerName, data, hints):
 
    
 def rule_1(s,playerName, data, hints):
-    # RULE 1: check if the player has a playable card -> action: play it
+    """
+    RULE 1: check if the player has a playable card -> action: play it
+    """
     cardIdx = playableCard(playerName, data, hints)
     if(cardIdx != -1):
         print("\nMOVE: RULE 1 -> play a playable card")
@@ -32,7 +34,9 @@ def rule_1(s,playerName, data, hints):
     return False
 
 def rule_2(s,playerName, data, hints):
-    # RULE 2: check if the player has a discardable card -> action: discard it
+    """
+    RULE 2: check if the player has a discardable card -> action: discard it
+    """
     cardIdx = discardableCard(playerName, data, hints)
     if(cardIdx != -1):
         print("\nMOVE: RULE 2 -> discard a discardable card")
@@ -42,7 +46,9 @@ def rule_2(s,playerName, data, hints):
     return False
 
 def rule_3(s,playerName, data, hints):
-    # RULE 3: check if another player has a playable card -> action: give hint
+    """
+    RULE 3: check if another player has a playable card -> action: give hint
+    """
     player, hint_t, hint_v = otherPlayerPlayableCard(playerName, data, hints)
     if(player is not None):
         print("\nMOVE: RULE 3 -> hint playable card")
@@ -52,7 +58,9 @@ def rule_3(s,playerName, data, hints):
     return False
 
 def rule_4(s,playerName, data, hints):
-    # RULE 4 : other player has critical card in first position -> action: give hint
+    """
+    RULE 4 : other player has critical card in first position -> action: give hint
+    """
     player, hint_t, hint_v = otherPlayerCriticalCardFirstPosition(playerName, data, hints)
     if(player is not None):
         print("\nMOVE: RULE 4 -> hint critical")
@@ -62,7 +70,9 @@ def rule_4(s,playerName, data, hints):
     return False
 
 def rule_5(s,playerName, data, hints):
-    # RULE 5A : other player has a discardable card -> action: give hint
+    """
+    RULE 5A : other player has a discardable card -> action: give hint
+    """
     player, hint_t, hint_v = otherPlayerDiscardableCard(playerName, data, hints, onlyComplete=True)
     if player is not None:
         print("\nMOVE: RULE 5a -> hint discardable card")
@@ -72,7 +82,9 @@ def rule_5(s,playerName, data, hints):
     return False
 
 def rule_6(s,playerName, data, hints):
-    # RULE 6: no playable cards but note tokens available -> action: give hint that gives more info
+    """
+    RULE 6: no playable cards but note tokens available -> action: give hint that gives more info
+    """
     if data.usedNoteTokens < 8:
         print("\nMOVE: RULE 6 -> hint with more informations")
         player, hint_t, hint_v = hintWithMoreInfo(playerName, data, hints, version = 1)
@@ -82,7 +94,9 @@ def rule_6(s,playerName, data, hints):
     return False
 
 def rule_7(s,playerName, data, hints):
-    # RULE 7: if note tokens were used -> action: discard oldest card with no hints, index = 0
+    """
+    RULE 7: if note tokens were used -> action: discard oldest card with no hints, index = 0
+    """
     cardIdx = discardOldestWithNoHints(playerName, data, hints)
     if(cardIdx != -1):
         print("\nMOVE: RULE 7 -> discard oldest card with no hints")
@@ -92,7 +106,9 @@ def rule_7(s,playerName, data, hints):
     return False
         
 def rule_8(s,playerName, data, hints):
-    # RULE 8: default: risky play -> play oldest card, index = 0
+    """
+    RULE 8: default: risky play -> play oldest card, index = 0
+    """
     print("\nMOVE: RULE 8 -> play oldest card")
     s.send(GameData.ClientPlayerPlayCardRequest(playerName, 0).serialize())
     return True
