@@ -3,7 +3,7 @@ import GameData
 
 DBG = False
 
-RULE6VERSION = 1
+RULE6VERSION = 0 
 RULE5COMPLETEONLY = True
 
 def checkRules(s, playerName, data, hints):
@@ -27,7 +27,7 @@ def checkRules(s, playerName, data, hints):
 
     # Choose versions for some of the rules
     RULE5COMPLETEONLY = True
-    RULE6VERSION = 2
+    RULE6VERSION = 3
 
     for rule in rule_set:
         # go throught the rules in the order of the rule_set
@@ -545,9 +545,9 @@ def hintWithMoreInfo(playerName, data, hints, version=1):
                 condition = 2 * n_complete + n_non_complete > 2 * \
                     best_n_complete + best_n_non_complete
 
-            elif version == 3:
-                # complete information has three time the value as non complete
-                condition = 3 * n_complete + n_non_complete > 3 * \
+            else:
+                # complete information has n=version time the value as non complete
+                condition = version * n_complete + n_non_complete > version * \
                     best_n_complete + best_n_non_complete
 
             if condition:

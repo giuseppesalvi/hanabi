@@ -16,7 +16,7 @@ Rules:
 + Rule 7: all note tokens were used -> action: discard oldest card with no hints
 + Rule 8: default: risky play -> play oldest card
 
-Inpirations:
+Inspirations:
 + https://www.semanticscholar.org/paper/Solving-Hanabi%3A-Estimating-Hands-by-Opponent%27s-in-Osawa/d7a7b4158ceaa20756e9b2f577654d2da1789bc4
 + https://bradbambara.wordpress.com/2017/05/11/a-winning-hanabi-strategy/
 + https://boardgamegeek.com/thread/804762/elusive-25-point-game-tips-effective-hanabi-play
