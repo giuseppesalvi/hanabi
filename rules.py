@@ -1,3 +1,4 @@
+from this import d
 import GameData
 
 DBG = False
@@ -12,60 +13,89 @@ def checkRules(s,playerName, data, hints):
     # Conservative Approach: "play a card only if if you are sure that is playable or no other moves are possible,
     # in order to avoid loosing matches with 3 red strikes"
 
+    rule_set = [rule_1, rule_2, rule_3, rule_4, rule_5, rule_6, rule_7, rule_8]
 
+    for rule in rule_set:
+        # go throught the rules in the order of the rule_set
+        # when the first rule is satisfied, it performs the action and returns true
+        if rule(s, playerName,data, hints):
+            return
+
+   
+def rule_1(s,playerName, data, hints):
+    # RULE 1: check if the player has a playable card -> action: play it
     cardIdx = playableCard(playerName, data, hints)
     if(cardIdx != -1):
         print("\nMOVE: RULE 1 -> play a playable card")
         s.send(GameData.ClientPlayerPlayCardRequest(playerName, cardIdx).serialize())
-        return
+        return True
+    return False
 
+def rule_2(s,playerName, data, hints):
     # RULE 2: check if the player has a discardable card -> action: discard it
     cardIdx = discardableCard(playerName, data, hints)
     if(cardIdx != -1):
         print("\nMOVE: RULE 2 -> discard a discardable card")
         s.send(GameData.ClientPlayerDiscardCardRequest(
             playerName, cardIdx).serialize())
-        return
+        return True
+    return False
 
+def rule_3(s,playerName, data, hints):
     # RULE 3: check if another player has a playable card -> action: give hint
     player, hint_t, hint_v = otherPlayerPlayableCard(playerName, data, hints)
     if(player is not None):
         print("\nMOVE: RULE 3 -> hint playable card")
         s.send(GameData.ClientHintData(
             playerName, player, hint_t, hint_v).serialize())
-        return
+        return True
+    return False
 
-    # RULE 4 : other player has critical card in first position -> action: give hint about it
+def rule_4(s,playerName, data, hints):
+    # RULE 4 : other player has critical card in first position -> action: give hint
     player, hint_t, hint_v = otherPlayerCriticalCardFirstPosition(playerName, data, hints)
     if(player is not None):
         print("\nMOVE: RULE 4 -> hint critical")
         s.send(GameData.ClientHintData(
             playerName, player, hint_t, hint_v).serialize())
-        return
+        return True
+    return False
 
-
-    # RULE 5: no playable cards but note tokens available -> action: give hint that gives more info
-    if data.usedNoteTokens < 8:
-        print("\nMOVE: RULE 5 -> hint with more informations")
-        player, hint_t, hint_v = hintWithMoreInfo(playerName, data, hints, version = 0)
+def rule_5(s,playerName, data, hints):
+    # RULE 5A : other player has a discardable card -> action: give hint
+    player, hint_t, hint_v = otherPlayerDiscardableCard(playerName, data, hints, onlyComplete=True)
+    if player is not None:
+        print("\nMOVE: RULE 5a -> hint discardable card")
         s.send(GameData.ClientHintData(
             playerName, player, hint_t, hint_v).serialize())
-        return
+        return True
+    return False
 
+def rule_6(s,playerName, data, hints):
+    # RULE 6: no playable cards but note tokens available -> action: give hint that gives more info
+    if data.usedNoteTokens < 8:
+        print("\nMOVE: RULE 6 -> hint with more informations")
+        player, hint_t, hint_v = hintWithMoreInfo(playerName, data, hints, version = 1)
+        s.send(GameData.ClientHintData(
+            playerName, player, hint_t, hint_v).serialize())
+        return True
+    return False
 
-    # RULE 6: if note tokens were used -> action: discard oldest card with no hints, index = 0
+def rule_7(s,playerName, data, hints):
+    # RULE 7: if note tokens were used -> action: discard oldest card with no hints, index = 0
     cardIdx = discardOldestWithNoHints(playerName, data, hints)
     if(cardIdx != -1):
-        print("\nMOVE: RULE 6 -> discard oldest card with no hints")
+        print("\nMOVE: RULE 7 -> discard oldest card with no hints")
         s.send(GameData.ClientPlayerDiscardCardRequest(
             playerName, cardIdx).serialize())
-        return
-
-    # RULE 7: default: -> play oldest card, index = 0
-    print("\nMOVE: RULE 7 -> play oldest card")
+        return True
+    return False
+        
+def rule_8(s,playerName, data, hints):
+    # RULE 8: default: risky play -> play oldest card, index = 0
+    print("\nMOVE: RULE 8 -> play oldest card")
     s.send(GameData.ClientPlayerPlayCardRequest(playerName, 0).serialize())
-    return
-    
+    return True
 
 
 def playableCard(playerName, data, hints):
@@ -323,6 +353,58 @@ def otherPlayerCriticalCardFirstPosition(playerName, data, hints):
 
     return best_card_player, best_card_hint_t, best_card_hint_v
 
+def otherPlayerDiscardableCard(playerName, data, hints, onlyComplete=True):
+    """
+    Check if another player has a discardable card, give a hint about it
+    two versions: if onlyComplete=True consider only hints that give complete information about the discardable card
+    in this way the player will discard that card surely, and won't consider it as a hint for good card
+    """
+
+    if DBG : print("DBG - CHECK RULE 5A")
+
+    # Cannot give hints if all Note tokes were used
+    if data.usedNoteTokens == 8:
+        return None, None, None 
+
+    for p in data.players:
+        # Skip the current players' hand: we have no informations TODO: CHECK if it's correct
+        if p.name == playerName:
+            continue
+        # we can see hands of other players, with complete info
+        hand = p.hand 
+        for idx, card in enumerate(hand):
+            color = card.color
+            value = card.value
+            # Check if that card is discardable
+            # If the table has higher or equal value for that color
+            if (len(data.tableCards[color]) > 0) and data.tableCards[color][-1].value >= value:
+                # see if it's the first hint, the second or two hints are already given
+                hand_h = hints[p.name]
+                hint_col = (hand_h[idx]["color"] == color)
+                hint_val = (hand_h[idx]["value"] == value)
+                # if the player already has complete information
+                if hint_col and hint_val:
+                    continue
+                # if the player already has a hint about the color, but not about the value
+                elif hint_col:
+                    return p.name, "value", value
+                
+                # if the player already has a hint about the value, but not about the color 
+                elif hint_val:
+                    return p.name, "color", color
+                
+                # if the player has no hints 
+                # if version is "onlyComplete" do not consider this card
+                else:
+                    if not onlyComplete:
+                        return p.name, "value", value
+
+            # TODO: check if i have duplicate cards
+            # TODO: check if in the discard pile there are all the cards for that color that block it
+            # TODO: check if in the discard pile there are all the cards for that value that block it
+
+    return None, None, None 
+
 
 def hintWithMoreInfo(playerName, data, hints, version=1):
     """
@@ -330,7 +412,7 @@ def hintWithMoreInfo(playerName, data, hints, version=1):
     version is the version of this algorithm: different ways of intending "more information"
     """
 
-    if DBG : print("DBG - CHECK RULE 5")
+    if DBG : print("DBG - CHECK RULE 6")
 
     # Go through all the possible hints and save the best,
     # A hint that gives complete information is more valuable than a hint that gives non complete information
@@ -432,7 +514,7 @@ def discardOldestWithNoHints(playerName, data, hints):
     return the idx of that card, -1 if cannot discard any card, because 0 note tokens were used
     """
 
-    if DBG : print("DBG - CHECK RULE 6")
+    if DBG : print("DBG - CHECK RULE 7")
 
     # Cannot discard any cards because no Note tokens were used
     if data.usedNoteTokens == 0:
