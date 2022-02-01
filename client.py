@@ -40,7 +40,7 @@ myTurn = False  # control the turn of the agent
 hints = {}
 data_seen = None
 
-NUM_MATCHES = 5
+NUM_MATCHES = 100 
 scores = []
 
 def agent():
@@ -276,11 +276,20 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             print("Ready for a new game!")
 
             # Restart the game
+ 
+            # Restore the hints
+            hints = {}
+            num_cards = 4 if len(data_seen.players) > 3 else 5
+            for p in data_seen.players:
+                l = []
+                for c in range(num_cards):
+                    l.append({"color": "", "value": 0})
+                hints[p.name] = l
+            data_seen = None
+
             time.sleep(1)
             next_turn()
 
 
         if not dataOk:
             print("Unknown or unimplemented data type: " + str(type(data)))
-        print("[" + playerName + " - " + status + "]: ", end="")
-        stdout.flush()
