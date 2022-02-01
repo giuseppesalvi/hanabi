@@ -20,14 +20,14 @@ def checkRules(s, playerName, data, hints):
     # in order to avoid loosing matches with 3 red strikes"
 
     # Select which rules to apply and their order
-    rule_set = [rule_1, rule_2, rule_3, rule_4, rule_5, rule_6, rule_7, rule_8]
+    #rule_set = [rule_1, rule_2, rule_3, rule_4, rule_5, rule_6, rule_7, rule_8]
 
     # 2players ?
-    # rule_set = [rule_1, rule_2, rule_3, rule_4, rule_7, rule_8]
+    rule_set = [rule_1, rule_2, rule_3, rule_4, rule_7, rule_8]
 
     # Choose versions for some of the rules
     RULE5COMPLETEONLY = True
-    RULE6VERSION = 3
+    RULE6VERSION = 1
 
     for rule in rule_set:
         # go throught the rules in the order of the rule_set

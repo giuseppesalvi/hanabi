@@ -8,6 +8,7 @@ import socket
 from constants import *
 import os
 from rules import checkRules
+import time
 
 
 if len(argv) < 4:
@@ -39,20 +40,23 @@ myTurn = False  # control the turn of the agent
 hints = {}
 data_seen = None
 
+NUM_MATCHES = 5
+scores = []
 
 def agent():
     global run
     global status
     global started
     global myTurn
-    # Initialize the agent
 
+    # Initialize the agent
     # I'm ready ...
     s.send(GameData.ClientPlayerStartRequest(playerName).serialize())
+
     while not started:
         pass
 
-    while run:
+    while run and len(scores) < NUM_MATCHES:
         if myTurn:
 
             # Check Rules and do corresponding action
@@ -60,8 +64,10 @@ def agent():
 
             # End of my Turn
             myTurn = False
-
+        
     # Game is finished, exit
+    print("\nMATCHES PLAYED= ", len(scores))
+    print("AVG SCORE =", sum(scores) / len(scores))
     os._exit(0)
 
 
@@ -263,8 +269,16 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             print(data.score)
             print(data.scoreMessage)
             stdout.flush()
-            run = False
+
+            #run = False
+
+            scores.append(data.score)
             print("Ready for a new game!")
+
+            # Restart the game
+            time.sleep(1)
+            next_turn()
+
 
         if not dataOk:
             print("Unknown or unimplemented data type: " + str(type(data)))
