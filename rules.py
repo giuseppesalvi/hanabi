@@ -1,5 +1,5 @@
-from this import d
 import GameData
+import globals
 
 DBG = False
 
@@ -27,13 +27,13 @@ def checkRules(s, playerName, data, hints):
 
     # Choose versions for some of the rules
     RULE5COMPLETEONLY = True
-    RULE6VERSION = 1
+    RULE6VERSION = 2 
 
     for rule in rule_set:
         # go throught the rules in the order of the rule_set
         # when the first rule is satisfied, it performs the action and returns true
         if rule(s, playerName, data, hints):
-            return
+            return 
 
 
 def rule_1(s, playerName, data, hints):
@@ -45,6 +45,7 @@ def rule_1(s, playerName, data, hints):
         print("\nMOVE: RULE 1 -> play a playable card")
         s.send(GameData.ClientPlayerPlayCardRequest(
             playerName, cardIdx).serialize())
+        globals.rules_used[0] += 1
         return True
     return False
 
@@ -58,6 +59,7 @@ def rule_2(s, playerName, data, hints):
         print("\nMOVE: RULE 2 -> discard a discardable card")
         s.send(GameData.ClientPlayerDiscardCardRequest(
             playerName, cardIdx).serialize())
+        globals.rules_used[1] += 1
         return True
     return False
 
@@ -71,6 +73,7 @@ def rule_3(s, playerName, data, hints):
         print("\nMOVE: RULE 3 -> hint playable card")
         s.send(GameData.ClientHintData(
             playerName, player, hint_t, hint_v).serialize())
+        globals.rules_used[2] += 1
         return True
     return False
 
@@ -85,6 +88,7 @@ def rule_4(s, playerName, data, hints):
         print("\nMOVE: RULE 4 -> hint critical")
         s.send(GameData.ClientHintData(
             playerName, player, hint_t, hint_v).serialize())
+        globals.rules_used[3] += 1
         return True
     return False
 
@@ -99,6 +103,7 @@ def rule_5(s, playerName, data, hints):
         print("\nMOVE: RULE 5a -> hint discardable card")
         s.send(GameData.ClientHintData(
             playerName, player, hint_t, hint_v).serialize())
+        globals.rules_used[4] += 1
         return True
     return False
 
@@ -113,6 +118,7 @@ def rule_6(s, playerName, data, hints):
             playerName, data, hints, version=RULE6VERSION)
         s.send(GameData.ClientHintData(
             playerName, player, hint_t, hint_v).serialize())
+        globals.rules_used[5] += 1
         return True
     return False
 
@@ -126,6 +132,7 @@ def rule_7(s, playerName, data, hints):
         print("\nMOVE: RULE 7 -> discard oldest card with no hints")
         s.send(GameData.ClientPlayerDiscardCardRequest(
             playerName, cardIdx).serialize())
+        globals.rules_used[6] += 1
         return True
     return False
 
@@ -136,6 +143,7 @@ def rule_8(s, playerName, data, hints):
     """
     print("\nMOVE: RULE 8 -> play oldest card")
     s.send(GameData.ClientPlayerPlayCardRequest(playerName, 0).serialize())
+    globals.rules_used[7] += 1
     return True
 
 
@@ -183,6 +191,10 @@ def discardableCard(playerName, data, hints):
         print("DBG - CHECK RULE 2")
 
     # Cannot discard any cards because no Note tokens were used
+    #if not data:
+    #    with open("prova.txt", "a") as f:
+    #        f.write("DATA NOT DEFINED!!!")
+    #    return -1
     if data.usedNoteTokens == 0:
         return -1
 
@@ -233,6 +245,12 @@ def otherPlayerPlayableCard(playerName, data, hints):
 
     if DBG:
         print("DBG - CHECK RULE 3")
+
+
+    #if not data:
+    #    with open("prova.txt", "a") as f:
+    #        f.write("DATA NOT DEFINED!!!")
+    #    return None, None, None
 
     # Cannot give hints if all Note tokes were used
     if data.usedNoteTokens == 8:
@@ -412,6 +430,10 @@ def otherPlayerDiscardableCard(playerName, data, hints, onlyComplete=True):
         print("DBG - CHECK RULE 5")
 
     # Cannot give hints if all Note tokes were used
+    #if not data:
+        #with open("prova.txt", "a") as f:
+            #f.write("DATA NOT AVAILABLE\n")
+
     if data.usedNoteTokens == 8:
         return None, None, None
 

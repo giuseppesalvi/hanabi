@@ -9,6 +9,8 @@ from constants import *
 import os
 from rules import checkRules
 import time
+from copy import deepcopy
+import globals
 
 
 if len(argv) < 4:
@@ -38,9 +40,9 @@ myTurn = False  # control the turn of the agent
 
 
 hints = {}
-data_seen = None
+data_seen = None # contains the state of the game
 
-NUM_MATCHES = 100 
+NUM_MATCHES =  3 
 scores = []
 
 def agent():
@@ -50,6 +52,7 @@ def agent():
     global myTurn
 
     # Initialize the agent
+    #rules_used = [0,0,0,0,0,0,0,0] # for statistics
     # I'm ready ...
     s.send(GameData.ClientPlayerStartRequest(playerName).serialize())
 
@@ -59,12 +62,20 @@ def agent():
     while run and len(scores) < NUM_MATCHES:
         if myTurn:
 
+            #something is wrong in synchronization between agents TODO: check
+            if not data_seen:
+                continue
+                
+
             # Check Rules and do corresponding action
             checkRules(s, playerName, data_seen, hints)
 
             # End of my Turn
             myTurn = False
         
+    
+    print("RULES USED")
+    print(globals.rules_used)
     # Game(s) finished, exit
     os._exit(0)
 
@@ -202,10 +213,17 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
                 print("\t" + c.toClientString())
             print("Note tokens used: " + str(data.usedNoteTokens) + "/8")
             print("Storm tokens used: " + str(data.usedStormTokens) + "/3\n\n")
+
+            # update the data game state variable
+            #data_seen = deepcopy(data)
+
             # check if it's this player's turn
-            data_seen = data # TODO: CHECK!!!
             if data.currentPlayer == playerName:
-                #data_seen = data
+
+                # so we are sure that in data_seen we have the state of the game TODO: remove these comments
+                # even if data pointer changes (ex: without usedNoteTokens)
+                data_seen = deepcopy(data)
+
                 myTurn = True
             else:
                 myTurn = False
@@ -214,6 +232,8 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             dataOk = True
             print("Invalid action performed. Reason:")
             print(data.message)
+            
+            next_turn() # TODO: check if needed we could have problems in sync
         if type(data) is GameData.ServerActionValid:
             # DISCARDED CARDS
             dataOk = True
@@ -241,6 +261,7 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             hints[last_player].append({"color": "", "value": 0})
 
             next_turn()
+
         if type(data) is GameData.ServerPlayerThunderStrike:
             dataOk = True
             print("OH NO! The Gods are unhappy with you!")
@@ -262,6 +283,8 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         if type(data) is GameData.ServerInvalidDataReceived:
             dataOk = True
             print(data.data)
+
+            next_turn() # TODO: check if needed we could have problems in sync
         if type(data) is GameData.ServerGameOver:
             dataOk = True
             print(data.message)
@@ -274,7 +297,7 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             scores.append(data.score)
 
             print("\nMATCHES PLAYED = ", len(scores), "/", NUM_MATCHES)
-            print("AVG SCORE = ", sum(scores) / len(scores), "\n")
+            print("AVG SCORE = %.2f" %(sum(scores) / len(scores)), "\n")
 
             print("Ready for a new game!")
 

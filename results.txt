@@ -5,16 +5,19 @@ PLAYERS = 2 100 matches
 
 PLAYERS = 3 100 matches
 
-16.75 (64)     ruleset=[1,2,3,4,5,6,7,8] rule4=True rule6=1
+16.1     ruleset=[1,2,3,4,5,6,7,8] rule4=True rule6=1
+16.39    ruleset=[1,2,3,4,5,6,7,8] rule4=True rule6=2
+16.33    ruleset=[1,2,3,4,5,6,7,8] rule4=True rule6=3
+16.36    ruleset=[1,2,3,4,5,6,7,8] rule4=True rule6=0
 
 PLAYERS = 4 100 matches
 
+16.39    ruleset=[1,2,3,4,5,6,7,8] rule4=True rule6=2
+15.64
 
-     ruleset=[1,2,3,4,5,6,7,8] rule4=True rule6=1
 
 PLAYERS = 5 100 matches
 
-     ruleset=[1,2,3,4,5,6,7,8] rule4=True rule6=1
 
 
 
