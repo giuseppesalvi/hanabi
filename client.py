@@ -65,9 +65,7 @@ def agent():
             # End of my Turn
             myTurn = False
         
-    # Game is finished, exit
-    print("\nMATCHES PLAYED= ", len(scores))
-    print("AVG SCORE =", sum(scores) / len(scores))
+    # Game(s) finished, exit
     os._exit(0)
 
 
@@ -205,8 +203,9 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             print("Note tokens used: " + str(data.usedNoteTokens) + "/8")
             print("Storm tokens used: " + str(data.usedStormTokens) + "/3\n\n")
             # check if it's this player's turn
+            data_seen = data # TODO: CHECK!!!
             if data.currentPlayer == playerName:
-                data_seen = data
+                #data_seen = data
                 myTurn = True
             else:
                 myTurn = False
@@ -273,6 +272,10 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             #run = False
 
             scores.append(data.score)
+
+            print("\nMATCHES PLAYED = ", len(scores), "/", NUM_MATCHES)
+            print("AVG SCORE = ", sum(scores) / len(scores), "\n")
+
             print("Ready for a new game!")
 
             # Restart the game
