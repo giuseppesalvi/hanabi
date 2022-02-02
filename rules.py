@@ -3,9 +3,10 @@ import globals
 
 DBG = False
 
+RULE3VERSION = 1
 RULE5COMPLETEONLY = True
 RULE6VERSION = 1 
-RULE7AVERSION = 1
+RULE9VERSION = 2
 
 def checkRules(s, playerName, data, hints):
     """
@@ -14,23 +15,24 @@ def checkRules(s, playerName, data, hints):
     data are the data of the match, hints are the hints collected during the game 
     """
 
+    global RULE3VERSION
     global RULE5COMPLETEONLY
     global RULE6VERSION
-    global RULE7AVERSION
+    global RULE9VERSION
 
     # Conservative Approach: "play a card only if if you are sure that is playable or no other moves are possible,
     # in order to avoid loosing matches with 3 red strikes"
 
     # Select which rules to apply and their order
     rule_set = [rule_1, rule_2, rule_3, rule_4, rule_5, rule_6, rule_7, rule_8]
-    # rule_set = [rule_1, rule_2, rule_3, rule_4, rule_5, rule_6, rule_7a, rule_7, rule_8]
-
-    # 2players ?
+    #rule_set = [rule_1, rule_2, rule_3, rule_4, rule_5, rule_6, rule_9, rule_7, rule_8]
 
     # Choose versions for some of the rules
+    RULE3VERSION = 1
     RULE5COMPLETEONLY = True
-    RULE6VERSION = 2  
-    RULE7AVERSION = 1
+    RULE6VERSION = 1  
+
+    RULE9VERSION = 1
 
     for rule in rule_set:
         # go throught the rules in the order of the rule_set
@@ -71,7 +73,7 @@ def rule_3(s, playerName, data, hints):
     """
     RULE 3: check if another player has a playable card -> action: give hint
     """
-    player, hint_t, hint_v = otherPlayerPlayableCard(playerName, data, hints)
+    player, hint_t, hint_v = otherPlayerPlayableCard(playerName, data, hints, version=RULE3VERSION)
     if(player is not None):
         print("\nMOVE: RULE 3 -> hint playable card")
         s.send(GameData.ClientHintData(
@@ -125,16 +127,16 @@ def rule_6(s, playerName, data, hints):
         return True
     return False
 
-def rule_7a(s, playerName, data, hints):
+def rule_9(s, playerName, data, hints):
     """
-    RULE 7a: if no risk of loosing the game and possible good playable card -> action: risky play 
+    RULE 9: if no risk of loosing the game and possible good playable card -> action: risky play 
     """
-    cardIdx = riskyPlayableCard(playerName, data, hints, version = RULE7AVERSION)
+    cardIdx = riskyPlayableCard(playerName, data, hints, version = RULE9VERSION)
     if cardIdx != -1:
-        print("\nMOVE: RULE 7a -> risky play")
+        print("\nMOVE: RULE 9 -> risky play")
         s.send(GameData.ClientPlayerPlayCardRequest(
             playerName, cardIdx).serialize())
-        globals.rules_used[6] += 1
+        globals.rules_used[8] += 1
     return False
 
 def rule_7(s, playerName, data, hints):
@@ -146,7 +148,7 @@ def rule_7(s, playerName, data, hints):
         print("\nMOVE: RULE 7 -> discard oldest card with no hints")
         s.send(GameData.ClientPlayerDiscardCardRequest(
             playerName, cardIdx).serialize())
-        globals.rules_used[7] += 1
+        globals.rules_used[6] += 1
         return True
     return False
 
@@ -157,8 +159,48 @@ def rule_8(s, playerName, data, hints):
     """
     print("\nMOVE: RULE 8 -> play oldest card")
     s.send(GameData.ClientPlayerPlayCardRequest(playerName, 0).serialize())
-    globals.rules_used[8] += 1
+    globals.rules_used[7] += 1
     return True
+
+
+def isPlayable(table, color, value):
+    """
+    Check if a card is playable given the table, the color of the card and the value of the card
+    """
+    return value == len(table[color]) + 1
+
+def noCopiesLeftInDeckOrHand(playerName, data, color, value):
+    """
+    Return True if no copies are left of the card with value and color in the deck or in the player's hand,
+    this means that all the copies are in the discardTable or in other players hands, or already in the table
+    """
+
+    total = -1
+    if value == 1:
+        total = 3
+    elif value == 5:
+        total = 1
+    else:
+        total = 2
+    
+    # subtract the copies found in the discard pile
+    for c in data.discardPile:
+        if c.color == color and c.value == value:
+            total -= 1
+    # subtract the copies in other players hands
+    for p in data.players:
+        # skip myself
+        if p.name == playerName:
+            continue
+        h = p.hand
+        for c in h:
+            if c.color == color and c.value == value:
+                total -= 1
+    # if the card is already in the table, subtract 1
+    if len(data.tableCards[color]) >= value:
+        total -= 1 
+            
+    return total == 0
 
 
 def playableCard(playerName, data, hints):
@@ -176,13 +218,41 @@ def playableCard(playerName, data, hints):
     for idx, card in enumerate(hand):
         color = card["color"]
         value = card["value"]
+
         # Check if he has a card with all informations
         if (color != "" and value != 0):
             # Check if that card is playable
-            # If it is a 1 and the pile is empty for that color
-            # Or If last added in the tableCard for that color has value - 1
-            if ((value == 1 and len(data.tableCards[color]) == 0) or
-                    (len(data.tableCards[color]) > 0) and data.tableCards[color][-1].value == value - 1):
+            if isPlayable(data.tableCards, color, value):
+                return idx 
+        
+        # Let's see if we don't have complete information through hints, but we can achieve it 
+        # looking at the DiscardPile and other player's hands
+
+        # if we know the color
+        elif color != "":
+            # see if all the values for that color are not in deck or my hand except one
+            tot = 0
+            for v in [1,2,3,4,5] :
+                if not noCopiesLeftInDeckOrHand(playerName, data, color, v):
+                # if for that value and color there are still copies, +1
+                    tot += 1
+            
+            # for that color, there are copies of only one value
+            if tot == 1:
+                for v in [1,2,3,4,5] :
+                    if not noCopiesLeftInDeckOrHand(playerName, data, color, v):
+                        # it's the only one which has copies left
+                        if isPlayable(data.tableCards,color, v):
+                            return idx
+ 
+        # if we know only the value
+        elif value != 0:
+            # see if all cards with that value left could be played. ex: first move all ones can be used
+            if ((noCopiesLeftInDeckOrHand(playerName, data, "red", value) or isPlayable(data.tableCards, "red", value) )and 
+                (noCopiesLeftInDeckOrHand(playerName, data, "yellow", value) or isPlayable(data.tableCards, "yellow", value)) and
+                (noCopiesLeftInDeckOrHand(playerName, data, "green", value) or isPlayable(data.tableCards, "green", value)) and
+                (noCopiesLeftInDeckOrHand(playerName, data, "blue", value) or isPlayable(data.tableCards, "blue", value) )and
+                (noCopiesLeftInDeckOrHand(playerName, data, "white", value) or isPlayable(data.tableCards, "white", value))):
                 return idx
 
     return -1
@@ -258,7 +328,7 @@ def discardableCard(playerName, data, hints):
     return -1
 
 
-def otherPlayerPlayableCard(playerName, data, hints):
+def otherPlayerPlayableCard(playerName, data, hints, version=0):
     """
     Check if another player has a playable card and find the best one, and the type of hint needed
     return the name of that player, and the hint type, and the hint value
@@ -282,10 +352,31 @@ def otherPlayerPlayableCard(playerName, data, hints):
     best_card_hint_t = None
     best_card_hint_v = None
 
+    # ordered players from the next of the current player to the previous one (he is not in the list)
+    #ordered_players = []
+    #skip = True
+    #for p in data.players: 
+        #if p.name == playerName:
+            #skip = False
+            #continue
+        #if skip == True:
+            #continue
+        #ordered_players.append(p)
+    #skip = False
+    #for p in data.players:
+        #if p.name == playerName:
+            #skip = True
+            #continue
+        #if skip:
+            #continue
+        #ordered_players.append(p)
+
+    #for p in ordered_players:
     for p in data.players:
         # Skip the current players' hand: we have no informations 
         if p.name == playerName:
             continue
+
         # we can see hands of other players, with complete info
         hand = p.hand
         for idx, card in enumerate(hand):
@@ -343,13 +434,24 @@ def otherPlayerPlayableCard(playerName, data, hints):
                         best_card_idx = idx
                         best_card_criticality = criticality
                         best_card_hint_completeness = completeness
+
+                        if version == 0:
                         # giving hint on color is better, if the hint is not already present
-                        if hint_col:
-                            best_card_hint_t = "value"
-                            best_card_hint_v = value
+                            if hint_col:
+                                best_card_hint_t = "value"
+                                best_card_hint_v = value
+                            else:
+                                best_card_hint_t = "color"
+                                best_card_hint_v = color
+                            
                         else:
-                            best_card_hint_t = "color"
-                            best_card_hint_v = color
+                        # giving hint on value is better, if the hint is not already present
+                            if hint_val:
+                                best_card_hint_t = "color"
+                                best_card_hint_v = color
+                            else:
+                                best_card_hint_t = "value"
+                                best_card_hint_v = value
 
     return best_card_player, best_card_hint_t, best_card_hint_v
 
@@ -376,6 +478,26 @@ def otherPlayerCriticalCardFirstPosition(playerName, data, hints):
     best_card_hint_t = None
     best_card_hint_v = None
 
+    # ordered players from the next of the current player to the previous one (he is not in the list)
+    #ordered_players = []
+    #skip = True
+    #for p in data.players: 
+        #if p.name == playerName:
+            #skip = False
+            #continue
+        #if skip == True:
+            #continue
+        #ordered_players.append(p)
+    #skip = False
+    #for p in data.players:
+        #if p.name == playerName:
+            #skip = True
+            #continue
+        #if skip:
+            #continue
+        #ordered_players.append(p)
+
+    #for p in ordered_players:
     for p in data.players:
         # Skip the current players' hand: we have no informations 
         if p.name == playerName:
@@ -450,6 +572,26 @@ def otherPlayerDiscardableCard(playerName, data, hints, onlyComplete=True):
     if data.usedNoteTokens == 8:
         return None, None, None
 
+    # ordered players from the next of the current player to the previous one (he is not in the list)
+    #ordered_players = []
+    #skip = True
+    #for p in data.players: 
+        #if p.name == playerName:
+            #skip = False
+            #continue
+        #if skip == True:
+            #continue
+        #ordered_players.append(p)
+    #skip = False
+    #for p in data.players:
+        #if p.name == playerName:
+            #skip = True
+            #continue
+        #if skip:
+            #continue
+        #ordered_players.append(p)
+
+    #for p in ordered_players:
     for p in data.players:
         # Skip the current players' hand: we have no informations 
         if p.name == playerName:
@@ -635,6 +777,10 @@ def riskyPlayableCard(playerName, data, hints, version):
     if no risk in loosing the game and have a possible good card from what I know with the hints,
     play that card
     """
+
+    if DBG:
+        print("DBG - CHECK RULE 9")
+
     
     # If the number of storm tokens used is high 
     # the risk of loosing the game and getting 0 pts is too high
