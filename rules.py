@@ -3,8 +3,9 @@ import globals
 
 DBG = False
 
-RULE6VERSION = 0 
 RULE5COMPLETEONLY = True
+RULE6VERSION = 1 
+RULE7AVERSION = 1
 
 def checkRules(s, playerName, data, hints):
     """
@@ -15,19 +16,21 @@ def checkRules(s, playerName, data, hints):
 
     global RULE5COMPLETEONLY
     global RULE6VERSION
+    global RULE7AVERSION
 
     # Conservative Approach: "play a card only if if you are sure that is playable or no other moves are possible,
     # in order to avoid loosing matches with 3 red strikes"
 
     # Select which rules to apply and their order
     rule_set = [rule_1, rule_2, rule_3, rule_4, rule_5, rule_6, rule_7, rule_8]
+    # rule_set = [rule_1, rule_2, rule_3, rule_4, rule_5, rule_6, rule_7a, rule_7, rule_8]
 
     # 2players ?
-    #rule_set = [rule_1, rule_2, rule_3, rule_4, rule_7, rule_8]
 
     # Choose versions for some of the rules
     RULE5COMPLETEONLY = True
-    RULE6VERSION = 2 
+    RULE6VERSION = 2  
+    RULE7AVERSION = 1
 
     for rule in rule_set:
         # go throught the rules in the order of the rule_set
@@ -122,6 +125,17 @@ def rule_6(s, playerName, data, hints):
         return True
     return False
 
+def rule_7a(s, playerName, data, hints):
+    """
+    RULE 7a: if no risk of loosing the game and possible good playable card -> action: risky play 
+    """
+    cardIdx = riskyPlayableCard(playerName, data, hints, version = RULE7AVERSION)
+    if cardIdx != -1:
+        print("\nMOVE: RULE 7a -> risky play")
+        s.send(GameData.ClientPlayerPlayCardRequest(
+            playerName, cardIdx).serialize())
+        globals.rules_used[6] += 1
+    return False
 
 def rule_7(s, playerName, data, hints):
     """
@@ -132,7 +146,7 @@ def rule_7(s, playerName, data, hints):
         print("\nMOVE: RULE 7 -> discard oldest card with no hints")
         s.send(GameData.ClientPlayerDiscardCardRequest(
             playerName, cardIdx).serialize())
-        globals.rules_used[6] += 1
+        globals.rules_used[7] += 1
         return True
     return False
 
@@ -143,7 +157,7 @@ def rule_8(s, playerName, data, hints):
     """
     print("\nMOVE: RULE 8 -> play oldest card")
     s.send(GameData.ClientPlayerPlayCardRequest(playerName, 0).serialize())
-    globals.rules_used[7] += 1
+    globals.rules_used[8] += 1
     return True
 
 
@@ -158,8 +172,6 @@ def playableCard(playerName, data, hints):
     if DBG:
         print("DBG - CHECK RULE 1")
 
-    # list of indexes of valid cards
-    valid_cards = []
     hand = hints[playerName]
     for idx, card in enumerate(hand):
         color = card["color"]
@@ -171,11 +183,8 @@ def playableCard(playerName, data, hints):
             # Or If last added in the tableCard for that color has value - 1
             if ((value == 1 and len(data.tableCards[color]) == 0) or
                     (len(data.tableCards[color]) > 0) and data.tableCards[color][-1].value == value - 1):
-                valid_cards.append(idx)
+                return idx
 
-    if len(valid_cards) > 0:
-        # return the first index: TODO can be improved by checking if one of them is the last copy
-        return valid_cards[0]
     return -1
 
 
@@ -191,48 +200,61 @@ def discardableCard(playerName, data, hints):
         print("DBG - CHECK RULE 2")
 
     # Cannot discard any cards because no Note tokens were used
-    #if not data:
-    #    with open("prova.txt", "a") as f:
-    #        f.write("DATA NOT DEFINED!!!")
-    #    return -1
     if data.usedNoteTokens == 0:
         return -1
 
-    # list of indexes of valid cards
-    valid_cards = []
     hand = hints[playerName]
     for idx, card in enumerate(hand):
         color = card["color"]
         value = card["value"]
-        # Check if that card discardable
+        # Check if that card is discardable
         # Check if he has a card with all informations
         if (color != "" and value != 0):
             # If the table has higher or equal value for that color
             if (len(data.tableCards[color]) > 0) and data.tableCards[color][-1].value >= value:
-                valid_cards.append(idx)
-            # TODO: check if i have duplicate cards
-            # TODO: check if in the discard pile there are all the cards for that color that block it
-            # TODO: check if in the discard pile there are all the cards for that value that block it
+                return idx
 
-        # Check for cards that we know only color
-        elif (color != ""):
+            # check if i have duplicate cards
+            for j, c in enumerate(hand):
+                if j != idx and c["color"] == color and c["value"] == value:
+                    return idx
+
+        # Check for cards that we know the color
+        if (color != ""):
             # If the table is complete for that color
             if len(data.tableCards[color]) == 5:
-                valid_cards.append(idx)
+                return idx
+            
+            # If the table for that color is blocked, because no copies of the next card are left
+            next_val = len(data.tableCards[color])
+            # count how many copies for that card are left
+            total = -1
+            if next_val == 1:
+                total = 3
+            elif next_val == 5:
+                total = 1
+            else:
+                total = 2
 
-        # Check for cards that we know only value
-        elif (value != 0):
+            # see how many copies of that card are still in the deck (or in other hands)
+            for c in data.discardPile:
+                if ((c.color == color) and (c.value == next_val)):
+                    total -= 1
+                
+            # if no copies of that card are left, all cards of that color can be discarded
+            if total == 0:
+                return idx
+
+        # Check for cards that we know the value
+        if (value != 0):
             # Check if in all the table colors the number are already higher
             if ((len(data.tableCards["red"]) > value) and
                 (len(data.tableCards["yellow"]) > value) and
                 (len(data.tableCards["green"]) > value) and
                 (len(data.tableCards["blue"]) > value) and
                     (len(data.tableCards["white"]) > value)):
-                valid_cards.append(idx)
+                return idx
 
-    if len(valid_cards) > 0:
-        # return the first index: TODO can be improved by checking if one of them is the last copy
-        return valid_cards[0]
     return -1
 
 
@@ -246,11 +268,6 @@ def otherPlayerPlayableCard(playerName, data, hints):
     if DBG:
         print("DBG - CHECK RULE 3")
 
-
-    #if not data:
-    #    with open("prova.txt", "a") as f:
-    #        f.write("DATA NOT DEFINED!!!")
-    #    return None, None, None
 
     # Cannot give hints if all Note tokes were used
     if data.usedNoteTokens == 8:
@@ -430,10 +447,6 @@ def otherPlayerDiscardableCard(playerName, data, hints, onlyComplete=True):
         print("DBG - CHECK RULE 5")
 
     # Cannot give hints if all Note tokes were used
-    #if not data:
-        #with open("prova.txt", "a") as f:
-            #f.write("DATA NOT AVAILABLE\n")
-
     if data.usedNoteTokens == 8:
         return None, None, None
 
@@ -616,3 +629,105 @@ def discardOldestWithNoHints(playerName, data, hints):
     # I would have already discarded it from a previous rule
     # So discard the first one
     return 0
+
+def riskyPlayableCard(playerName, data, hints, version):
+    """
+    if no risk in loosing the game and have a possible good card from what I know with the hints,
+    play that card
+    """
+    
+    # If the number of storm tokens used is high 
+    # the risk of loosing the game and getting 0 pts is too high
+    if data.usedStormTokens >= version:
+        return -1
+    
+    # Check if I have a card with only 1 hint that could be played
+    # Note: if it has two info this is surely not playable (rule 1 is passed)
+    hand = hints[playerName]
+    for idx, card in enumerate(hand):
+        color = card["color"]
+        value = card["value"]
+
+        # if I know the value but not the color
+        if color == "" and value != 0:
+
+            # assume the color to be one of the possible colors
+            colors = ["red", "yellow", "green", "blue", "white"]
+
+            for color in colors:
+
+                # If that card would be playable:
+                # If it is a 1 and the pile is empty for that color
+                # Or If last added in the tableCard for that color has value - 1
+                if ((value == 1 and len(data.tableCards[color]) == 0) or
+                        (len(data.tableCards[color]) > 0) and data.tableCards[color][-1].value == value - 1):
+
+                    # It's possible that the card has that color only if one or more copies are left in the deck or my hand
+                    total = -1
+                    if value == 1:
+                        total = 3
+                    elif value == 5:
+                        total = 1
+                    else:
+                        total = 2
+
+                    # subtract copies of that card in the discardPile
+                    for c in data.discardPile:
+                        if ((c.color == color) and (c.value == value)):
+                            total -= 1
+                
+                    # subtract copies of that card in the other players' hands
+                    for p in data.players:
+                        # skip myself
+                        if p.name == playerName:
+                            continue
+                        h= p.hand
+                        for c in h:
+                            if c.color == color and c.value == value:
+                                total -= 1
+                
+                    # if at least one copy is left
+                    if total >= 1:
+
+                        all_ok = True
+                        # if the assumption of the color is wrong verify if one or more copies of other colors 
+                        # with that value are left, to avoid risking discarding last copy of a card
+
+                        for clr in colors:
+                            if clr == color:
+                                continue
+
+                            total = -1
+                            if value == 1:
+                                total = 3
+                            elif value == 5:
+                                total = 1
+                            else:
+                                total = 2
+
+                            # subtract copies of that card in the discardPile
+                            for c in data.discardPile:
+                                if ((c.color == clr) and (c.value == value)):
+                                    total -= 1
+                            
+                            if total <= 1:
+                                all_ok = False
+
+                        # Time to risk a play !!
+                        if all_ok:
+                            return idx
+
+        # if I know the color but not the value
+        #if color != "" and value  == 0:
+
+            # Check if that card is playable
+            # If it is a 1 and the pile is empty for that color
+            # Or If last added in the tableCard for that color has value - 1
+            #if ((value == 1 and len(data.tableCards[color]) == 0) or
+                    #(len(data.tableCards[color]) > 0) and data.tableCards[color][-1].value == value - 1):
+                #valid_cards.append(idx)
+
+    return -1
+
+
+        # If the card is not what I think, check if other copies of those possible cards are left in game or hands

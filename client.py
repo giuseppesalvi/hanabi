@@ -42,7 +42,7 @@ myTurn = False  # control the turn of the agent
 hints = {}
 data_seen = None # contains the state of the game
 
-NUM_MATCHES =  3 
+NUM_MATCHES =  100 
 scores = []
 
 def agent():
@@ -52,7 +52,6 @@ def agent():
     global myTurn
 
     # Initialize the agent
-    #rules_used = [0,0,0,0,0,0,0,0] # for statistics
     # I'm ready ...
     s.send(GameData.ClientPlayerStartRequest(playerName).serialize())
 
@@ -62,7 +61,6 @@ def agent():
     while run and len(scores) < NUM_MATCHES:
         if myTurn:
 
-            #something is wrong in synchronization between agents TODO: check
             if not data_seen:
                 continue
                 
@@ -76,6 +74,8 @@ def agent():
     
     print("RULES USED")
     print(globals.rules_used)
+    print("LOST GAMES")
+    print(globals.lost_games)
     # Game(s) finished, exit
     os._exit(0)
 
@@ -182,8 +182,6 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             s.send(GameData.ClientPlayerReadyData(playerName).serialize())
             status = statuses[1]
 
-            # GAME CAN START INITIALIZE INFORMATIONS !!!
-
             # Initialize hints knowing the number of players
             # 4 or 5 players: 4 cards, 2 or 3 players : 5 cards
             num_cards = 4 if len(data.players) > 3 else 5
@@ -214,14 +212,8 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             print("Note tokens used: " + str(data.usedNoteTokens) + "/8")
             print("Storm tokens used: " + str(data.usedStormTokens) + "/3\n\n")
 
-            # update the data game state variable
-            #data_seen = deepcopy(data)
-
             # check if it's this player's turn
             if data.currentPlayer == playerName:
-
-                # so we are sure that in data_seen we have the state of the game TODO: remove these comments
-                # even if data pointer changes (ex: without usedNoteTokens)
                 data_seen = deepcopy(data)
 
                 myTurn = True
@@ -233,7 +225,8 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             print("Invalid action performed. Reason:")
             print(data.message)
             
-            next_turn() # TODO: check if needed we could have problems in sync
+            next_turn() 
+
         if type(data) is GameData.ServerActionValid:
             # DISCARDED CARDS
             dataOk = True
@@ -284,7 +277,7 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             dataOk = True
             print(data.data)
 
-            next_turn() # TODO: check if needed we could have problems in sync
+            next_turn() 
         if type(data) is GameData.ServerGameOver:
             dataOk = True
             print(data.message)
@@ -293,6 +286,8 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             stdout.flush()
 
             #run = False
+            if data.score == 0:
+                globals.lost_games += 1 
 
             scores.append(data.score)
 
