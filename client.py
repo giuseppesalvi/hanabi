@@ -40,10 +40,11 @@ myTurn = False  # control the turn of the agent
 
 
 hints = {}
-data_seen = None # contains the state of the game
+data_seen = None  # contains the state of the game
 
-NUM_MATCHES =  100 
+NUM_MATCHES = 100
 scores = []
+
 
 def agent():
     global run
@@ -63,15 +64,13 @@ def agent():
 
             if not data_seen:
                 continue
-                
 
             # Check Rules and do corresponding action
             checkRules(s, playerName, data_seen, hints)
 
             # End of my Turn
             myTurn = False
-        
-    
+
     print("RULES USED")
     print(globals.rules_used)
     print("LOST GAMES")
@@ -224,8 +223,8 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             dataOk = True
             print("Invalid action performed. Reason:")
             print(data.message)
-            
-            next_turn() 
+
+            next_turn()
 
         if type(data) is GameData.ServerActionValid:
             # DISCARDED CARDS
@@ -277,7 +276,7 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             dataOk = True
             print(data.data)
 
-            next_turn() 
+            next_turn()
         if type(data) is GameData.ServerGameOver:
             dataOk = True
             print(data.message)
@@ -287,17 +286,17 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
 
             #run = False
             if data.score == 0:
-                globals.lost_games += 1 
+                globals.lost_games += 1
 
             scores.append(data.score)
 
             print("\nMATCHES PLAYED = ", len(scores), "/", NUM_MATCHES)
-            print("AVG SCORE = %.2f" %(sum(scores) / len(scores)), "\n")
+            print("AVG SCORE = %.2f" % (sum(scores) / len(scores)), "\n")
 
             print("Ready for a new game!")
 
             # Restart the game
- 
+
             # Restore the hints
             hints = {}
             num_cards = 4 if len(data_seen.players) > 3 else 5
@@ -310,7 +309,6 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
 
             time.sleep(1)
             next_turn()
-
 
         if not dataOk:
             print("Unknown or unimplemented data type: " + str(type(data)))
