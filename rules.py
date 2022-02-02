@@ -26,7 +26,7 @@ def checkRules(s, playerName, data, hints):
     # in order to avoid loosing matches with 3 red strikes"
 
     # BEST !!
-    rule_set = [rule_1, rule_2, rule_3, rule_4, rule_5, rule_6, rule_7, rule_8]
+    #rule_set = [rule_1, rule_2, rule_3, rule_4, rule_5, rule_6, rule_7, rule_8]
 
     #rule_set = [rule_1, rule_2, rule_3, rule_6, rule_7, rule_8]
 
@@ -34,15 +34,14 @@ def checkRules(s, playerName, data, hints):
 
     #rule_set = [rule_1, rule_2, rule_3, rule_5, rule_6, rule_7, rule_8]
 
-    #rule_set = [rule_1, rule_2, rule_3, rule_4, rule_5, rule_6, rule_9, rule_7, rule_8]
+    rule_set = [rule_1, rule_2, rule_3, rule_4, rule_5, rule_6, rule_9, rule_7, rule_8]
 
     # Choose versions for some of the rules
 
     # BEST !!
     RULE3VERSION = 1
-    RULE5COMPLETEONLY = True
+    RULE5COMPLETEONLY = True 
     RULE6VERSION = 1
-
     RULE9VERSION = 1
 
     for rule in rule_set:
@@ -169,7 +168,7 @@ def rule_7(s, playerName, data, hints):
 
 def rule_8(s, playerName, data, hints):
     """
-    RULE 8: default: risky play -> play oldest card, index = 0
+    RULE 8: default: risky play -> action: play oldest card, index = 0
     """
     print("\nMOVE: RULE 8 -> play oldest card")
     s.send(GameData.ClientPlayerPlayCardRequest(playerName, 0).serialize())

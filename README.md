@@ -5,6 +5,7 @@ Exam of computational intelligence 2021 - 2022. It requires teaching the client 
 Author: Giuseppe salvi, s287583
 
 Approach: Rule based agent, conservative approach to limit lost matches with 0 points, play a card only if if you are sure that is playable or no other moves are possible
+The agent was done to play with other agents with different approaches, or even manual players. So assumptions on strategies of the other players are not considered.
 
 Rules:
 + Rule 1: the player has a playable card -> action: play it
@@ -15,6 +16,15 @@ Rules:
 + Rule 6: no playable cards but note tokens available -> action: give hint that gives more info
 + Rule 7: all note tokens were used -> action: discard oldest card with no hints
 + Rule 8: default: risky play -> play oldest card
++ Rule 9: no risk loosing the game and possible good playable card -> action: risky play
+
+Results:
+I played the game with multiple instances of the agent with different rule sets and different versions of the rule.
+I obtained the best results with the rule_set: [rule_1, rule_2, rule_3 (version 1), rule_4, rule_5 (complete = True), rule_6(version 1), rule_7, rule_8].
++ 2 players: 16.26
++ 3 players: 17.57
++ 4 players: 16.77
++ 5 players: 15.45
 
 Inspirations:
 + https://www.semanticscholar.org/paper/Solving-Hanabi%3A-Estimating-Hands-by-Opponent%27s-in-Osawa/d7a7b4158ceaa20756e9b2f577654d2da1789bc4
