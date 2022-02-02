@@ -10,7 +10,7 @@ import os
 from rules import checkRules
 import time
 from copy import deepcopy
-import globals
+import stats
 
 
 if len(argv) < 4:
@@ -72,9 +72,9 @@ def agent():
             myTurn = False
 
     print("RULES USED")
-    print(globals.rules_used)
+    print(stats.rules_used)
     print("LOST GAMES")
-    print(globals.lost_games)
+    print(stats.lost_games)
     # Game(s) finished, exit
     os._exit(0)
 
@@ -286,7 +286,7 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
 
             #run = False
             if data.score == 0:
-                globals.lost_games += 1
+                stats.lost_games += 1
 
             scores.append(data.score)
 

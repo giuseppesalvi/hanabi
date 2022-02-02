@@ -1,4 +1,4 @@
-import globals
+import stats
 import GameData
 DBG = False
 
@@ -26,7 +26,7 @@ def checkRules(s, playerName, data, hints):
     # in order to avoid loosing matches with 3 red strikes"
 
     # BEST !!
-    #rule_set = [rule_1, rule_2, rule_3, rule_4, rule_5, rule_6, rule_7, rule_8]
+    rule_set = [rule_1, rule_2, rule_3, rule_4, rule_5, rule_6, rule_7, rule_8]
 
     #rule_set = [rule_1, rule_2, rule_3, rule_6, rule_7, rule_8]
 
@@ -34,7 +34,7 @@ def checkRules(s, playerName, data, hints):
 
     #rule_set = [rule_1, rule_2, rule_3, rule_5, rule_6, rule_7, rule_8]
 
-    rule_set = [rule_1, rule_2, rule_3, rule_4, rule_5, rule_6, rule_9, rule_7, rule_8]
+    #rule_set = [rule_1, rule_2, rule_3, rule_4, rule_5, rule_6, rule_9, rule_7, rule_8]
 
     # Choose versions for some of the rules
 
@@ -60,7 +60,7 @@ def rule_1(s, playerName, data, hints):
         print("\nMOVE: RULE 1 -> play a playable card")
         s.send(GameData.ClientPlayerPlayCardRequest(
             playerName, cardIdx).serialize())
-        globals.rules_used[0] += 1
+        stats.rules_used[0] += 1
         return True
     return False
 
@@ -74,7 +74,7 @@ def rule_2(s, playerName, data, hints):
         print("\nMOVE: RULE 2 -> discard a discardable card")
         s.send(GameData.ClientPlayerDiscardCardRequest(
             playerName, cardIdx).serialize())
-        globals.rules_used[1] += 1
+        stats.rules_used[1] += 1
         return True
     return False
 
@@ -89,7 +89,7 @@ def rule_3(s, playerName, data, hints):
         print("\nMOVE: RULE 3 -> hint playable card")
         s.send(GameData.ClientHintData(
             playerName, player, hint_t, hint_v).serialize())
-        globals.rules_used[2] += 1
+        stats.rules_used[2] += 1
         return True
     return False
 
@@ -104,7 +104,7 @@ def rule_4(s, playerName, data, hints):
         print("\nMOVE: RULE 4 -> hint critical")
         s.send(GameData.ClientHintData(
             playerName, player, hint_t, hint_v).serialize())
-        globals.rules_used[3] += 1
+        stats.rules_used[3] += 1
         return True
     return False
 
@@ -119,7 +119,7 @@ def rule_5(s, playerName, data, hints):
         print("\nMOVE: RULE 5a -> hint discardable card")
         s.send(GameData.ClientHintData(
             playerName, player, hint_t, hint_v).serialize())
-        globals.rules_used[4] += 1
+        stats.rules_used[4] += 1
         return True
     return False
 
@@ -134,7 +134,7 @@ def rule_6(s, playerName, data, hints):
             playerName, data, hints, version=RULE6VERSION)
         s.send(GameData.ClientHintData(
             playerName, player, hint_t, hint_v).serialize())
-        globals.rules_used[5] += 1
+        stats.rules_used[5] += 1
         return True
     return False
 
@@ -148,7 +148,7 @@ def rule_9(s, playerName, data, hints):
         print("\nMOVE: RULE 9 -> risky play")
         s.send(GameData.ClientPlayerPlayCardRequest(
             playerName, cardIdx).serialize())
-        globals.rules_used[8] += 1
+        stats.rules_used[8] += 1
     return False
 
 
@@ -161,7 +161,7 @@ def rule_7(s, playerName, data, hints):
         print("\nMOVE: RULE 7 -> discard oldest card with no hints")
         s.send(GameData.ClientPlayerDiscardCardRequest(
             playerName, cardIdx).serialize())
-        globals.rules_used[6] += 1
+        stats.rules_used[6] += 1
         return True
     return False
 
@@ -172,7 +172,7 @@ def rule_8(s, playerName, data, hints):
     """
     print("\nMOVE: RULE 8 -> play oldest card")
     s.send(GameData.ClientPlayerPlayCardRequest(playerName, 0).serialize())
-    globals.rules_used[7] += 1
+    stats.rules_used[7] += 1
     return True
 
 
