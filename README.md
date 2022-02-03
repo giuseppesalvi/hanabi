@@ -2,8 +2,7 @@
 
 Exam of computational intelligence 2021 - 2022. It requires teaching the client to play the game of Hanabi (rules can be found [here](https://www.spillehulen.dk/media/102616/hanabi-card-game-rules.pdf)).
 
-## Author 
-Giuseppe Salvi, s287583
+Author : Giuseppe Salvi, s287583
 
 ## Approach
 Rule based agent, conservative approach to limit lost matches with 0 points: play a card only if if you are sure that is playable or no other moves are possible.
@@ -25,8 +24,9 @@ So assumptions on strategies of the other players were not considered.
 ## Results
 I played the game with multiple instances of the agent with different rule sets and different versions of the rules.
 I obtained the best results with the the following rule_set: 
+### Rule set
 [rule_1, rule_2, rule_3 (version 1), rule_4, rule_5 (complete = True), rule_6 (version 1), rule_9 (version 2, p=0.6), rule_7, rule_8].
-Average scores (100+ matches):
+### Average scores (100+ matches)
 + 2 players: 16.33
 + 3 players: 17.74
 + 4 players: 16.89
