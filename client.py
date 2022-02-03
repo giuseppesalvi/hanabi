@@ -265,7 +265,6 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             hints[last_player].pop(last_card_played_idx)
             hints[last_player].append({"color": "", "value": 0})
 
-
             next_turn()
 
         if type(data) is GameData.ServerHintData:
