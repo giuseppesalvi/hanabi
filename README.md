@@ -2,14 +2,16 @@
 
 Exam of computational intelligence 2021 - 2022. It requires teaching the client to play the game of Hanabi (rules can be found [here](https://www.spillehulen.dk/media/102616/hanabi-card-game-rules.pdf)).
 
-Author: Giuseppe Salvi, s287583
+## Author 
+Giuseppe Salvi, s287583
 
-Approach: Rule based agent, conservative approach to limit lost matches with 0 points: play a card only if if you are sure that is playable or no other moves are possible.
+## Approach
+Rule based agent, conservative approach to limit lost matches with 0 points: play a card only if if you are sure that is playable or no other moves are possible.
 
 The agent was designed to play with other agents with different approaches, or even manual players. 
 So assumptions on strategies of the other players were not considered.
 
-Rules:
+## Rules
 + Rule 1: the player has a playable card -> action: play it
 + Rule 2: the player has a discardable card -> action: discard it
 + Rule 3: other player has a playable card -> action: give hint
@@ -20,7 +22,7 @@ Rules:
 + Rule 8: default: very risky play -> play oldest card
 + Rule 9: no risk loosing the game and possible good playable card -> action: risky play
 
-Results:
+## Results
 I played the game with multiple instances of the agent with different rule sets and different versions of the rules.
 I obtained the best results with the the following rule_set: 
 [rule_1, rule_2, rule_3 (version 1), rule_4, rule_5 (complete = True), rule_6 (version 1), rule_9 (version 2, p=0.6), rule_7, rule_8].
@@ -30,7 +32,7 @@ Average scores (100+ matches):
 + 4 players: 16.89
 + 5 players: 15.55
 
-Inspirations:
+## Inspirations
 + https://www.semanticscholar.org/paper/Solving-Hanabi%3A-Estimating-Hands-by-Opponent%27s-in-Osawa/d7a7b4158ceaa20756e9b2f577654d2da1789bc4
 + https://bradbambara.wordpress.com/2017/05/11/a-winning-hanabi-strategy/
 + https://boardgamegeek.com/thread/804762/elusive-25-point-game-tips-effective-hanabi-play
