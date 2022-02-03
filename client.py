@@ -255,8 +255,16 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             next_turn()
 
         if type(data) is GameData.ServerPlayerThunderStrike:
+            # PLAYED WRONG CARDS
             dataOk = True
             print("OH NO! The Gods are unhappy with you!")
+
+            last_player = data.lastPlayer
+            last_card_played_idx = data.cardHandIndex
+
+            hints[last_player].pop(last_card_played_idx)
+            hints[last_player].append({"color": "", "value": 0})
+
 
             next_turn()
 

@@ -5,12 +5,17 @@ PLAYERS = 2 100 matches
 15.92   ruleset=[1,2,3,4,5,6,7,8] rule3=1 rule5=True rule6=2
 15.21   ruleset=[1,2,3,4,6,7,8] rule3=1 rule5=True rule6=1
 
+16.33   ruleset=[1,2,3,4,5,6,9,7,8] rule3=1 rule5=True rule6=1 rule9=2 0.6       
+15.73   ruleset=[1,2,3,4,9,5,6,7,8] rule3=1 rule5=True rule6=1 rule9=2 0.6       
+        
+
 
 PLAYERS = 3 100 matches
 
 17.57    ruleset=[1,2,3,4,5,6,7,8] rule3=1 rule5=True rule6=1
 17.44    ruleset=[1,2,3,4,5,6,7,8] rule3=1 rule5=True rule6=2
-15.32 (lost 11) ruleset=[1,2,3,4,5,6,9,7,8] rule3=1 rule5=True rule6=1
+
+17.    ruleset=[1,2,3,4,5,6,9,7,8] rule3=1 rule5=True rule6=1 rule9=2 0.6       
 
 PLAYERS = 4 100 matches
 
@@ -18,6 +23,7 @@ PLAYERS = 4 100 matches
 16.68   ruleset=[1,2,3,4,5,6,7,8] rule3=1 rule5=False rule6=1
 16.57   ruleset=[1,2,3,4,5,6,7,8] rule3=1 rule5=True rule6=2
 
+16.66   ruleset=[1,2,3,4,5,6,9,7,8] rule3=1 rule5=True rule6=1 rule9=2 0.6       
 
 PLAYERS = 5 100 matches
 
@@ -31,9 +37,11 @@ PLAYERS = 5 100 matches
 15.35   ruleset=[1,2,3,4,6,7,8] rule3=0 rule5=True rule6=1
 15.26   ruleset=[1,2,3,5,6,7,8] rule3=0 rule5=True rule6=1
 14.91   ruleset=[1,2,3,4,5,6,7,8] rule3=0 rule5=True rule6=1
-14.08 (lost 9) ruleset=[1,2,3,4,5,6,9,7,8] rule3=1 rule5=True rule6=1 rule7a=1
 
 
 
+15.55   ruleset=[1,2,3,4,5,6,9,7,8] rule3=1 rule5=True rule6=1 rule9=2 0.6       
+15.30   ruleset=[1,2,3,4,5,6,9,7,8] rule3=1 rule5=True rule6=1 rule9=2 0.3
+   ruleset=[1,2,3,9,4,5,6,7,8] rule3=1 rule5=True rule6=1 rule9=2 0.6       
 
 

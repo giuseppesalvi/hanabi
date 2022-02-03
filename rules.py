@@ -26,7 +26,7 @@ def checkRules(s, playerName, data, hints):
     # in order to avoid loosing matches with 3 red strikes"
 
     # BEST !!
-    rule_set = [rule_1, rule_2, rule_3, rule_4, rule_5, rule_6, rule_7, rule_8]
+    #rule_set = [rule_1, rule_2, rule_3, rule_4, rule_5, rule_6, rule_7, rule_8]
 
     #rule_set = [rule_1, rule_2, rule_3, rule_6, rule_7, rule_8]
 
@@ -36,13 +36,18 @@ def checkRules(s, playerName, data, hints):
 
     #rule_set = [rule_1, rule_2, rule_3, rule_4, rule_5, rule_6, rule_9, rule_7, rule_8]
 
+    rule_set = [rule_1, rule_2, rule_3, rule_9, rule_4, rule_5, rule_6, rule_7, rule_8]
+
+    #rule_set = [rule_1, rule_2, rule_3, rule_5, rule_6, rule_9, rule_7, rule_8]
     # Choose versions for some of the rules
+
+    #rule_set = [rule_1, rule_2, rule_6, rule_7, rule_8]
 
     # BEST !!
     RULE3VERSION = 1
     RULE5COMPLETEONLY = True 
     RULE6VERSION = 1
-    RULE9VERSION = 1
+    RULE9VERSION = 2
 
     for rule in rule_set:
         # go throught the rules in the order of the rule_set
@@ -168,7 +173,7 @@ def rule_7(s, playerName, data, hints):
 
 def rule_8(s, playerName, data, hints):
     """
-    RULE 8: default: risky play -> action: play oldest card, index = 0
+    RULE 8: default: very risky play -> action: play oldest card, index = 0
     """
     print("\nMOVE: RULE 8 -> play oldest card")
     s.send(GameData.ClientPlayerPlayCardRequest(playerName, 0).serialize())
@@ -270,6 +275,7 @@ def playableCard(playerName, data, hints):
                 return idx
 
     return -1
+    
 
 
 def discardableCard(playerName, data, hints):
@@ -752,6 +758,72 @@ def discardOldestWithNoHints(playerName, data, hints):
     return 0
 
 
+def howManyCopiesLeftInDeckOrHand(playerName, data, color, value):
+    """
+    Returns how many copies are left of the card with value and color in the deck or in the player's hand,
+    this is the total number of copies for that card minus all the copies in the discardTable or in other players hands, or already in the table
+    """
+
+    total = -1
+    if value == 1:
+        total = 3
+    elif value == 5:
+        total = 1
+    else:
+        total = 2
+
+    # subtract the copies found in the discard pile
+    for c in data.discardPile:
+        if c.color == color and c.value == value:
+            total -= 1
+    # subtract the copies in other players hands
+    for p in data.players:
+        # skip myself
+        if p.name == playerName:
+            continue
+        h = p.hand
+        for c in h:
+            if c.color == color and c.value == value:
+                total -= 1
+    # if the card is already in the table, subtract 1
+    if len(data.tableCards[color]) >= value:
+        total -= 1
+
+    return total
+
+def isCritical(playerName, data, color, value):
+    """ 
+    Check if a card is critical: it's the last copy and is not already in the table
+    """
+    # If the card is already in the table, it's not critical
+    if len(data.tableCards[color]) >= value:
+        return False
+    
+    # Count how many copies are left in deck, or in players' hands
+    total = -1
+    if value == 1:
+        total = 3
+    elif value == 5:
+        total = 1
+    else:
+        total = 2
+
+    # subtract the copies found in the discard pile
+    for c in data.discardPile:
+        if c.color == color and c.value == value:
+            total -= 1
+    # subtract the copies in other players hands
+    for p in data.players:
+        # skip myself
+        if p.name == playerName:
+            continue
+        h = p.hand
+        for c in h:
+            if c.color == color and c.value == value:
+                total -= 1
+
+    return total == 1
+
 def riskyPlayableCard(playerName, data, hints, version):
     """
     if no risk in loosing the game and have a possible good card from what I know with the hints,
@@ -766,6 +838,9 @@ def riskyPlayableCard(playerName, data, hints, version):
     if data.usedStormTokens >= version:
         return -1
 
+    best_idx = -1
+    best_prob = 0
+
     # Check if I have a card with only 1 hint that could be played
     # Note: if it has two info this is surely not playable (rule 1 is passed)
     hand = hints[playerName]
@@ -779,67 +854,60 @@ def riskyPlayableCard(playerName, data, hints, version):
             # assume the color to be one of the possible colors
             colors = ["red", "yellow", "green", "blue", "white"]
 
+            tot_playable = 0 # total possibilities playable
+            tot_possibilities = 0 # total possibilities
+            critical = False
+
             for color in colors:
 
+                # see how many copies for that card are left in deck or current player's hand
+                tot_copies = howManyCopiesLeftInDeckOrHand(playerName, data, color, value)
+                tot_possibilities += tot_copies
+
                 # If that card would be playable:
-                # If it is a 1 and the pile is empty for that color
-                # Or If last added in the tableCard for that color has value - 1
-                if ((value == 1 and len(data.tableCards[color]) == 0) or
-                        (len(data.tableCards[color]) > 0) and data.tableCards[color][-1].value == value - 1):
+                if isPlayable(data.tableCards, color, value):
+                    tot_playable += tot_copies 
 
-                    # It's possible that the card has that color only if one or more copies are left in the deck or my hand
-                    total = -1
-                    if value == 1:
-                        total = 3
-                    elif value == 5:
-                        total = 1
-                    else:
-                        total = 2
+                # If that card would not be playable and is the last copy
+                elif isCritical(playerName, data, color, value):
+                    critical = True
+            # If no risk of discarding a critical card and good probability of playing a playable card
+            if not critical and tot_playable / tot_possibilities > best_prob:
+                best_prob = tot_playable / tot_possibilities
+                best_idx = idx
 
-                    # subtract copies of that card in the discardPile
-                    for c in data.discardPile:
-                        if ((c.color == color) and (c.value == value)):
-                            total -= 1
 
-                    # subtract copies of that card in the other players' hands
-                    for p in data.players:
-                        # skip myself
-                        if p.name == playerName:
-                            continue
-                        h = p.hand
-                        for c in h:
-                            if c.color == color and c.value == value:
-                                total -= 1
+        # if I know the color but not the value
+        if color != "" and value == 0:
 
-                    # if at least one copy is left
-                    if total >= 1:
+            # assume the value to be one of the possible colors
+            values = [1,2,3,4,5]
 
-                        all_ok = True
-                        # if the assumption of the color is wrong verify if one or more copies of other colors
-                        # with that value are left, to avoid risking discarding last copy of a card
+            tot_playable = 0 # total possibilities playable
+            tot_possibilities = 0 # total possibilities
+            critical = False
 
-                        for clr in colors:
-                            if clr == color:
-                                continue
+            for value in values:
 
-                            total = -1
-                            if value == 1:
-                                total = 3
-                            elif value == 5:
-                                total = 1
-                            else:
-                                total = 2
+                # see how many copies for that card are left in deck or current player's hand
+                tot_copies = howManyCopiesLeftInDeckOrHand(playerName, data, color, value)
+                tot_possibilities += tot_copies
 
-                            # subtract copies of that card in the discardPile
-                            for c in data.discardPile:
-                                if ((c.color == clr) and (c.value == value)):
-                                    total -= 1
+                # If that card would be playable:
+                if isPlayable(data.tableCards, color, value):
+                    tot_playable += tot_copies 
 
-                            if total <= 1:
-                                all_ok = False
+                # If that card would not be playable and is the last copy
+                elif isCritical(playerName, data, color, value):
+                    critical = True
+            
+            # If no risk of discarding a critical card and good probability of playing a playable card
+            if not critical and tot_playable / tot_possibilities > best_prob:
+                best_prob = tot_playable / tot_possibilities
+                best_idx = idx
 
-                        # Time to risk a play !!
-                        if all_ok:
-                            return idx
-
+    # if the probability of playing a playable card when playing card with idx = best_idx is higher than a given threshold
+    if best_prob > 0.6:
+        # "Bernardeschi risk the play"
+        return best_idx
     return -1
