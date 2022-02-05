@@ -25,7 +25,7 @@ I played the game with multiple instances of the agent with different rule sets 
 I obtained the best results with the the following rule_set: 
 [rule_1, rule_2, rule_3 (version 1), rule_4, rule_5 (complete = True), rule_6 (version 1), rule_9 (version 2, p=0.6), rule_7, rule_8].
 Average scores (100+ matches):
-+ 2 players: 16.33
++ 2 players: 16.25
 + 3 players: 17.74
 + 4 players: 16.89
 + 5 players: 15.55

@@ -42,7 +42,7 @@ myTurn = False  # control the turn of the agent
 hints = {}
 data_seen = None  # contains the state of the game
 
-NUM_MATCHES = 100
+NUM_MATCHES = 1
 scores = []
 
 

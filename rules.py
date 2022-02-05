@@ -23,6 +23,10 @@ def checkRules(s, playerName, data, hints):
     # Select which rules to apply and their order
 
     # BEST !!
+    rule_set = [rule_1, rule_2, rule_3, rule_4, rule_5, rule_6, rule_9, rule_7, rule_8]
+
+    # Other rule_set tried
+
     #rule_set = [rule_1, rule_2, rule_3, rule_4, rule_5, rule_6, rule_7, rule_8]
 
     #rule_set = [rule_1, rule_2, rule_3, rule_6, rule_7, rule_8]
@@ -31,9 +35,6 @@ def checkRules(s, playerName, data, hints):
 
     #rule_set = [rule_1, rule_2, rule_3, rule_5, rule_6, rule_7, rule_8]
 
-    rule_set = [rule_1, rule_2, rule_3, rule_4,
-                rule_5, rule_6, rule_9, rule_7, rule_8]
-
     #rule_set = [rule_1, rule_2, rule_3, rule_9, rule_4, rule_5, rule_6, rule_7, rule_8]
 
     #rule_set = [rule_1, rule_2, rule_3, rule_5, rule_6, rule_9, rule_7, rule_8]
@@ -41,6 +42,7 @@ def checkRules(s, playerName, data, hints):
     #rule_set = [rule_1, rule_2, rule_6, rule_7, rule_8]
 
     # Choose versions for some of the rules
+    
     # BEST !!
     RULE3VERSION = 1
     RULE5COMPLETEONLY = True
